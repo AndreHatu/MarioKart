@@ -1,4 +1,4 @@
-### Mario Kart with RC cars and ESP32s
+# Mario Kart with RC cars and ESP32s
 This project aims at developing a real-life Mario Kart with RC cars and ESP32s.
 The boards used utilize a single-core MCU (ESP-MINI-1 and ESP-SOLO-1). 
 Schematics and wiring will be posted in the near future.
