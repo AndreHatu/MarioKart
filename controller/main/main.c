@@ -23,14 +23,14 @@
 #define GPIO_INPUT_3 37
 #define GPIO_INPUT_PIN_SELECT ((1ULL<<GPIO_INPUT_0)|(1ULL<<GPIO_INPUT_1)|(1ULL<<GPIO_INPUT_2)|(1ULL<<GPIO_INPUT_3))
 #define CONFIG_ESPNOW_PMK "pmk1234567890"
-
+#define CAR_MAC_ADDR {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4}
 
 uint8_t CONTROLLER_MAC_ADDR[6] = {0x3c, 0x61, 0x05, 0x7d, 0xe0, 0x88};
-uint8_t CAR_MAC_ADDR[6] = {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4};
+// uint8_t CAR_MAC_ADDR[6] = {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4};
 
 typedef struct __attribute__((packed)) {
-	uint8_t orig_mac[6];
-	uint8_t dest_mac[6];
+	// uint8_t orig_mac[6];
+	// uint8_t dest_mac[6];
 	bool up;
 	bool down;
 	bool left;
@@ -47,8 +47,6 @@ static EventGroupHandle_t s_evt_group;
 // }
 
 void package_data(packet_t* packet){
-	memcpy(packet->orig_mac, CONTROLLER_MAC_ADDR, 6);
-	memcpy(packet->dest_mac, CAR_MAC_ADDR, 6);
 	packet->up = (bool)gpio_get_level(GPIO_INPUT_0);
 	packet->down = (bool)gpio_get_level(GPIO_INPUT_1);
 	packet->left = (bool)gpio_get_level(GPIO_INPUT_2);
@@ -58,9 +56,10 @@ void package_data(packet_t* packet){
 static void send_info(void* args){
 	packet_t* packet = malloc(sizeof(packet_t));
 	esp_err_t err;
+	const uint8_t DEST_MAC[] = CAR_MAC_ADDR;
 	for(;;){
 		package_data(packet);
-		if((err = esp_now_send(&CAR_MAC_ADDR, (uint8_t*)packet, sizeof(packet_t))) != ESP_OK){
+		if((err = esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(packet_t))) != ESP_OK){
 			printf("Error sending packet: %x\n", err);
 		}
 		vTaskDelay(5000 / portTICK_PERIOD_MS);
