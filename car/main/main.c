@@ -20,6 +20,7 @@
 
 uint8_t CONTROLLER_MAC_ADDR[6] = {0x3c, 0x61, 0x05, 0x7d, 0xe0, 0x88};
 uint8_t CAR_MAC_ADDR[6] = {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4};
+uint8_t TOWER_MAC_ADDR[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 static xQueueHandle s_recv_queue;
 
@@ -31,6 +32,13 @@ typedef struct __attribute__((packed)) {
 	bool left;
 	bool right;
 } packet_t;
+
+typedef struct __attribute__((packed)) {
+	uint8_t src_mac[6];
+	uint8_t dest_mac[6];
+	uint32_t tag_id;
+	
+} packet_tag;
 
 typedef struct {
 	uint8_t sender_mac_addr[6];
