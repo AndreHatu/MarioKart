@@ -25,4 +25,11 @@ typedef struct {
 	packet_t data;
 } recv_packet_t;
 
+//send data struct(car->tower)
+typedef struct __attribute__((packed)) {
+	uint8_t src_mac[6];
+	uint8_t dest_mac[6];
+	uint8_t tag_id[5];
+} packet_tag;
+
 #endif

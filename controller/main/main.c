@@ -13,6 +13,7 @@
 #include "esp_now.h"
 #include "esp_system.h"
 #include "esp_sleep.h"
+#include "mario_kart_config.h"
 
 #include "../../config/mario_kart_config.h"
 
