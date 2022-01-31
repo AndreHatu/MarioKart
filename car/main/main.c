@@ -47,10 +47,10 @@ typedef struct {
 
 void print_packet(packet_t packet){
 	// packet_t* packet = (packet_t*)incomingData;
-	printf(packet->up ? "up " : "   ");
-	printf(packet->down ? "down " : "     ");
-	printf(packet->left ? "left " : "     ");
-	printf(packet->right ? "right " : "      \n");
+	printf(packet.up ? "up " : "   ");
+	printf(packet.down ? "down " : "     ");
+	printf(packet.left ? "left " : "     ");
+	printf(packet.right ? "right " : "      \n");
 }
 
 static void queue_process_task(void *p)
@@ -150,9 +150,7 @@ void app_main(void) {
 	rc522_start(start_args);
 
 
-	ESP_ERROR_CHECK(nvs_flash_init());
-	initialize_wifi();
-	initialize_esp_now();
+	initialize_esp_now_car();
 
-
+	xTaskCreate(queue_process_task, "Receive_from_controller", 2048, NULL, 2, NULL);
 }
