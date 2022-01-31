@@ -13,6 +13,7 @@
 #include "esp_now.h"
 #include "esp_system.h"
 #include "esp_sleep.h"
+#include "mario_kart_config.h"
 
 //BIG BRDB:   3c:61:05:7d:e0:88
 //SMALL BRDB: 3c:61:05:7d:dd:a4
@@ -27,15 +28,6 @@
 
 uint8_t CONTROLLER_MAC_ADDR[6] = {0x3c, 0x61, 0x05, 0x7d, 0xe0, 0x88};
 // uint8_t CAR_MAC_ADDR[6] = {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4};
-
-typedef struct __attribute__((packed)) {
-	// uint8_t orig_mac[6];
-	// uint8_t dest_mac[6];
-	bool up;
-	bool down;
-	bool left;
-	bool right;
-} packet_t;
 
 // static xQueueHandle gpio_event_q = NULL;
 static EventGroupHandle_t s_evt_group;

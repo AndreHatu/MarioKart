@@ -14,6 +14,7 @@
 #include "esp_now.h"
 #include "esp_system.h"
 #include "esp_sleep.h"
+#include "mario_kart_config.h"
 
 #define CONFIG_ESPNOW_PMK "pmk1234567890"
 
@@ -24,26 +25,6 @@ uint8_t TOWER_MAC_ADDR[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 static xQueueHandle s_recv_queue;
 
-typedef struct __attribute__((packed)) {
-	uint8_t orig_mac[6];
-	uint8_t dest_mac[6];
-	bool up;
-	bool down;
-	bool left;
-	bool right;
-} packet_t;
-
-typedef struct __attribute__((packed)) {
-	uint8_t src_mac[6];
-	uint8_t dest_mac[6];
-	uint32_t tag_id;
-	
-} packet_tag;
-
-typedef struct {
-	uint8_t sender_mac_addr[6];
-	packet_t data;
-} recv_packet_t;
 
 void print_packet(packet_t packet){
 	// packet_t* packet = (packet_t*)incomingData;
@@ -53,6 +34,12 @@ void print_packet(packet_t packet){
 	printf(packet.right ? "right " : "      \n");
 }
 
+void package_data(packet_tag* packet, uint8_t* serial_no ){
+	memcpy(packet->tag_id, serial_no, sizeof(uint8_t)*5); // read data from tag reader module
+}
+
+
+//receive data process
 static void queue_process_task(void *p)
 {
     static recv_packet_t recv_packet;
@@ -89,6 +76,26 @@ void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
 
 }
 
+//send data process
+static void send_info(void* args){
+	if((err = esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(packet_tag))) != ESP_OK){
+			printf("Error sending packet: %x\n", err);
+	}
+	vTaskDelay(5000 / portTICK_PERIOD_MS);
+}
+
+
+void packet_sent_cb(const uint8_t* mac_addr, esp_now_send_status_t status){
+	if(mac_addr==NULL){
+		ESP_LOGE("Controller", "Send cb mac error");
+		return;
+	}
+	printf(status==ESP_NOW_SEND_SUCCESS ? "ESP NOW Success\n" : status==ESP_NOW_SEND_FAIL ? "ESP NOW Fail\n" : "Unknown error occurred when sending packet\n");
+	xEventGroupSetBits(s_evt_group, BIT(status));
+}
+
+
+//Initialize esp32 to enable send and receive
 static void initialize_esp_now_car(void){
 	// init NVS (storage) for wifi
 	esp_err_t ret = nvs_flash_init();
@@ -109,14 +116,15 @@ static void initialize_esp_now_car(void){
 
 	ESP_ERROR_CHECK(esp_now_init());
 	ESP_ERROR_CHECK(esp_now_register_recv_cb(recv_cb));
+	ESP_ERROR_CHECK(esp_now_register_send_cb(packet_sent_cb));
 	ESP_ERROR_CHECK(esp_now_set_pmk((uint8_t*)CONFIG_ESPNOW_PMK)); // maybe dont need it since we're not encrypting packets
 
-	// const esp_now_peer_info_t dest_peer = {
-	// 	.peer_addr = CAR_MAC_ADDR,
-	// 	.channel = 1,
-	// 	.ifidx = ESP_IF_WIFI_STA
-	// };
-	// ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer));
+	const esp_now_peer_info_t dest_peer = {
+		.peer_addr = TOWER_MAC_ADDR,
+		.channel = 2,
+		.ifidx = ESP_IF_WIFI_STA
+	};
+	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer));
 }
 
 void tag_handler(uint8_t* serial_no){
@@ -126,6 +134,13 @@ void tag_handler(uint8_t* serial_no){
 
 	printf("\n");
 	gpio_set_level(5, 0);
+
+	packet_tag* packet = malloc(sizeof(packet_tag));
+	esp_err_t err;
+	const uint8_t DEST_MAC[] = TOWER_MAC_ADDR;
+	
+	package_data(packet, serial_no);
+
 }
 
 void app_main(void) {
@@ -152,5 +167,6 @@ void app_main(void) {
 
 	initialize_esp_now_car();
 
-	xTaskCreate(queue_process_task, "Receive_from_controller", 2048, NULL, 2, NULL);
+	xTaskCreate(queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
+	xTaskCreate(send_info, "Send_info_to_Tower", 2048, NULL, 2, NULL);
 }
