@@ -24,6 +24,7 @@ uint8_t CAR_MAC_ADDR[6] = {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4};
 uint8_t TOWER_MAC_ADDR[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 static xQueueHandle s_recv_queue;
+static xQueueHandle tag_queue;
 
 
 void print_packet(packet_t packet){
@@ -34,10 +35,19 @@ void print_packet(packet_t packet){
 	printf(packet.right ? "right " : "      \n");
 }
 
-void package_data(packet_tag* packet, uint8_t* serial_no ){
-	memcpy(packet->tag_id, serial_no, sizeof(uint8_t)*5); // read data from tag reader module
-}
 
+static void queue_process_task_send(void *p) // sending rfid tag info to central tower
+{
+	while(1)
+	{
+		if (xQueueReceive(tag_queue, &packet_tag, portMAX_DELAY)){
+			esp_now_send(TOWER_MAC_ADDR, (uint8_t*)packet);
+		}
+		else{
+			taskYIELD();
+		}
+	}
+}
 
 //receive data process
 static void queue_process_task(void *p)
@@ -139,8 +149,8 @@ void tag_handler(uint8_t* serial_no){
 	esp_err_t err;
 	const uint8_t DEST_MAC[] = TOWER_MAC_ADDR;
 	
-	package_data(packet, serial_no);
-
+	memcpy(packet->tag_id, serial_no, sizeof(uint8_t)*5); // read data from tag reader module
+	xQueueSend(tag_queue,&packet_tag, portMAX_DELAY);
 }
 
 void app_main(void) {
