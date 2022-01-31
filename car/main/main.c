@@ -15,55 +15,36 @@
 #include "esp_system.h"
 #include "esp_sleep.h"
 
-#define CONFIG_ESPNOW_PMK "pmk1234567890"
-
-
-uint8_t CONTROLLER_MAC_ADDR[6] = {0x3c, 0x61, 0x05, 0x7d, 0xe0, 0x88};
-uint8_t CAR_MAC_ADDR[6] = {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4};
+#include "../../config/mario_kart_config.h"
 
 static xQueueHandle s_recv_queue;
 
-typedef struct __attribute__((packed)) {
-	uint8_t orig_mac[6];
-	uint8_t dest_mac[6];
-	bool up;
-	bool down;
-	bool left;
-	bool right;
-} packet_t;
-
-typedef struct {
-	uint8_t sender_mac_addr[6];
-	packet_t data;
-} recv_packet_t;
 
 void print_packet(packet_t packet){
 	// packet_t* packet = (packet_t*)incomingData;
-	printf(packet.up ? "up " : "   ");
-	printf(packet.down ? "down " : "     ");
-	printf(packet.left ? "left " : "     ");
+	printf(packet.up ? "up " : "   |");
+	printf(packet.down ? "down " : "     |");
+	printf(packet.left ? "left " : "     |");
 	printf(packet.right ? "right " : "      \n");
 }
 
 static void queue_process_task(void *p)
 {
-    static recv_packet_t recv_packet;
+    packet_t recv_packet;
 
     ESP_LOGI("Car", "Listening");
     for(;;)
     {
-        if(xQueueReceive(s_recv_queue, &recv_packet, portMAX_DELAY) != pdTRUE)
+        if(xQueueReceive(s_recv_queue, &recv_packet, portMAX_DELAY))
         {
-            continue;
+            print_packet(recv_packet);
         }
-
-        // Refer to user function
-        print_packet((packet_t)recv_packet.data);
+        
     }
 }
 
 void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
-	static recv_packet_t recv_packet;
+	static packet_t recv_packet;
 
 	ESP_LOGI("Car", "%d bytes incoming from " MACSTR, len, MAC2STR(mac_addr));
 
@@ -72,8 +53,7 @@ void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
 		return;
 	}
 
-    memcpy(&recv_packet.sender_mac_addr, mac_addr, sizeof(recv_packet.sender_mac_addr));
-    memcpy(&recv_packet.data, data, len);
+    memcpy(&recv_packet, data, len);
     if (xQueueSend(s_recv_queue, &recv_packet, 0) != pdTRUE) {
         ESP_LOGW("Car", "Queue full, discarded");
         return;
@@ -141,7 +121,7 @@ void app_main(void) {
 	gpio_set_level(18, 1);
 	rc522_start(start_args);
 
-
+	s_recv_queue = xQueueCreate(10, sizeof(packet_t));
 	initialize_esp_now_car();
 
 	xTaskCreate(queue_process_task, "Receive_from_controller", 2048, NULL, 2, NULL);
