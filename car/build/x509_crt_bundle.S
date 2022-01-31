@@ -1,4 +1,4 @@
-/* * Data converted from C:/Users/andre/prog/rfid/build/esp-idf/mbedtls/x509_crt_bundle
+/* * Data converted from C:/Users/andre/prog/MarioKart/car/build/esp-idf/mbedtls/x509_crt_bundle
  */
 .data
 .section .rodata.embedded

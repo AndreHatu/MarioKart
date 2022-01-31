@@ -7,7 +7,7 @@
 
 # =============================================================================
 # Project: esp-idf-vscode-boilerplate
-# Configuration: Debug
+# Configuration: 
 # =============================================================================
 # =============================================================================
 
@@ -1531,7 +1531,7 @@ rule C_STATIC_LIBRARY_LINKER____idf_main
 # Rule for re-running cmake.
 
 rule RERUN_CMAKE
-  command = C:\Users\andre\.espressif\tools\cmake\3.16.4\bin\cmake.exe -SC:\Users\andre\prog\rfid -BC:\Users\andre\prog\rfid\build
+  command = C:\Users\andre\.espressif\tools\cmake\3.16.4\bin\cmake.exe -SC:\Users\andre\prog\MarioKart\car -BC:\Users\andre\prog\MarioKart\car\build
   description = Re-running CMake...
   generator = 1
 
