@@ -22,10 +22,11 @@ static xQueueHandle s_recv_queue;
 
 void print_packet(packet_t packet){
 	// packet_t* packet = (packet_t*)incomingData;
-	printf(packet.up ? "up " : "   |");
-	printf(packet.down ? "down " : "     |");
-	printf(packet.left ? "left " : "     |");
-	printf(packet.right ? "right " : "      \n");
+	
+	printf(packet.left ? "left |" : "     |");
+	printf(packet.right ? "right " : "      |");
+	printf(packet.up ? "up |" : "   |");
+	printf(packet.down ? "down \n" : "     \n");
 }
 
 static void queue_process_task(void *p)

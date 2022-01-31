@@ -21,8 +21,8 @@
 
 #define GPIO_INPUT_0 26
 #define GPIO_INPUT_1 33
-#define GPIO_INPUT_2 36
-#define GPIO_INPUT_3 37
+#define GPIO_INPUT_2 23
+#define GPIO_INPUT_3 22
 #define GPIO_INPUT_PIN_SELECT ((1ULL<<GPIO_INPUT_0)|(1ULL<<GPIO_INPUT_1)|(1ULL<<GPIO_INPUT_2)|(1ULL<<GPIO_INPUT_3))
 
 // static xQueueHandle gpio_event_q = NULL;
