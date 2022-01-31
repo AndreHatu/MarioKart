@@ -15,6 +15,8 @@
 #include "esp_sleep.h"
 #include "mario_kart_config.h"
 
+#include "../../config/mario_kart_config.h"
+
 //BIG BRDB:   3c:61:05:7d:e0:88
 //SMALL BRDB: 3c:61:05:7d:dd:a4
 
@@ -23,11 +25,6 @@
 #define GPIO_INPUT_2 36
 #define GPIO_INPUT_3 37
 #define GPIO_INPUT_PIN_SELECT ((1ULL<<GPIO_INPUT_0)|(1ULL<<GPIO_INPUT_1)|(1ULL<<GPIO_INPUT_2)|(1ULL<<GPIO_INPUT_3))
-#define CONFIG_ESPNOW_PMK "pmk1234567890"
-#define CAR_MAC_ADDR {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4}
-
-uint8_t CONTROLLER_MAC_ADDR[6] = {0x3c, 0x61, 0x05, 0x7d, 0xe0, 0x88};
-// uint8_t CAR_MAC_ADDR[6] = {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4};
 
 // static xQueueHandle gpio_event_q = NULL;
 static EventGroupHandle_t s_evt_group;
@@ -54,7 +51,7 @@ static void send_info(void* args){
 		if((err = esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(packet_t))) != ESP_OK){
 			printf("Error sending packet: %x\n", err);
 		}
-		vTaskDelay(5000 / portTICK_PERIOD_MS);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
 		// EventBits_t bits = xEventGroupWaitBits(s_evt_group, BIT(ESP_NOW_SEND_SUCCESS) | BIT(ESP_NOW_SEND_FAIL), pdTRUE, pdFALSE, 2000 / portTICK_PERIOD_MS);
 		// if(!(bits & BIT(ESP_NOW_SEND_SUCCESS))){
 		// 	if(bits & BIT(ESP_NOW_SEND_FAIL)){
@@ -119,5 +116,6 @@ void app_main(void) {
 	// ERROR: missing configuration for init functions
 	
 	initialize_esp_now_controller();
+	s_evt_group = xEventGroupCreate();
 	xTaskCreate(send_info, "Send_info_from_controller", 2048, NULL, 1, NULL);
 }
