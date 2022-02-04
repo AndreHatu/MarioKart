@@ -20,8 +20,16 @@ static xQueueHandle recv_q;
 static xQueueHandle modifier_q;
 
 
-void print_packet(tag_packet packet){
+// assign random modifier based on tag or mark checkpoint
+void tag_handler(tag_packet packet){
 	printf("Received tag packet: %02x %02x %02x %02x %02x \n", packet.tag_id[0], packet.tag_id[1], packet.tag_id[2], packet.tag_id[3], packet.tag_id[4]);
+	
+	// TODO: add all logic for either choosing and sending out modifiers or marking checkpoints
+	modifier_packet* send_packet = malloc(sizeof(modifier_packet));
+	send_packet->modifier = 0xff;
+	if(xQueueSend(modifier_q, send_packet, portMAX_DELAY) != pdTRUE){
+		ESP_LOGW("Tower", "Modifier Queue Full");
+	}
 }
 
 //receive data from car (NFC tag information)
@@ -34,7 +42,7 @@ static void queue_process_task(void *p)
     {
         if(xQueueReceive(recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
         {
-            print_packet(recv_packet);
+			tag_handler(recv_packet);
         }
 		else{
 			taskYIELD();

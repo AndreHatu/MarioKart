@@ -43,7 +43,7 @@ typedef struct __attribute__((packed)) {
 
 //send data struct(tower->car) :: modifier information
 typedef struct __attribute__((packed)) {
-	uint8_t modifier[5];
+	uint8_t modifier;
 } modifier_packet;
 
 //struct for packet received by car from tower
