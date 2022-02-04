@@ -17,15 +17,14 @@
 
 #include "../../config/mario_kart_config.h"
 
-static xQueueHandle recv_q;
+static xQueueHandle ctrl_recv_q;
 static xQueueHandle tag_q;
+static xQueueHandle tower_recv_q;
 
 
-void print_packet(packet_t packet){
-	// packet_t* packet = (packet_t*)incomingData;
-	
+void print_packet(controls_packet packet){
 	printf(packet.left ? "left |" : "     |");
-	printf(packet.right ? "right " : "      |");
+	printf(packet.right ? "right |" : "      |");
 	printf(packet.up ? "up |" : "   |");
 	printf(packet.down ? "down \n" : "     \n");
 }
@@ -40,12 +39,12 @@ void print_packet(packet_t packet){
 
 static void queue_send_task(void *p) // sending rfid tag info to central tower
 {
-	packet_tag* packet = NULL;
+	tag_packet* packet = NULL;
 	const uint8_t DEST_MAC[] = TOWER_MAC_ADDR;
 	while(1)
 	{
-		if (xQueueReceive(tag_q, packet, portMAX_DELAY)){
-			if(esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(packet_tag)) != ESP_OK){
+		if (xQueueReceive(tag_q, packet, portMAX_DELAY) == pdTRUE){
+			if(esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(tag_packet)) != ESP_OK){
 				ESP_LOGE("Car", "Error sending packet to tower\n");
 			}
 		}
@@ -55,41 +54,60 @@ static void queue_send_task(void *p) // sending rfid tag info to central tower
 	}
 }
 
-//receive data process
-static void queue_process_task(void *p)
+// receive controls process
+static void ctrl_queue_process_task(void *p)
 {
-    packet_t recv_packet;
-
-    ESP_LOGI("Car", "Listening");
+    controls_packet recv_packet;
+    ESP_LOGI("Car", "Listening_to_controls");
     for(;;)
     {
-        if(xQueueReceive(recv_q, &recv_packet, portMAX_DELAY))
+        if(xQueueReceive(ctrl_recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
         {
             print_packet(recv_packet);
-        }
-        
+        }        
+    }
+}
+
+// receive modifiers process
+static void tower_queue_process_task(void *p)
+{
+    modifier_packet recv_packet;
+    ESP_LOGI("Car", "Listening_to_modifiers");
+    for(;;)
+    {
+        if(xQueueReceive(tower_recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
+        {
+            // print_packet(recv_packet);
+			printf("Received modifier\n");
+        }        
     }
 }
 
 void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
-	static packet_t recv_packet;
 
 	ESP_LOGI("Car", "%d bytes incoming from " MACSTR, len, MAC2STR(mac_addr));
 
-	if(len != sizeof(packet_t)){
-		ESP_LOGE("Car", "Unexpected packet size");
+	if(len == sizeof(controls_packet)){
+		static controls_packet recv_packet;
+		memcpy(&recv_packet, data, len);
+		if (xQueueSend(ctrl_recv_q, &recv_packet, 0) != pdTRUE) {
+			ESP_LOGW("Car", "Controls Queue full, discarded");
+			return;
+		}
+	}
+	else if (len == sizeof(modifier_packet)){
+		static modifier_packet recv_packet;
+		memcpy(&recv_packet, data, len);
+		if (xQueueSend(tower_recv_q, &recv_packet, 0) != pdTRUE) {
+			ESP_LOGW("Car", "Modifiers Queue full, discarded");
+			return;
+		}
+	}
+	else{
+		ESP_LOGE("Car", "Unrecognized packet size");
 		return;
 	}
-
-    memcpy(&recv_packet, data, len);
-    if (xQueueSend(recv_q, &recv_packet, 0) != pdTRUE) {
-        ESP_LOGW("Car", "Queue full, discarded");
-        return;
-    }
-
 }
-
-
 
 void packet_sent_cb(const uint8_t* mac_addr, esp_now_send_status_t status){
 	if(mac_addr==NULL){
@@ -99,7 +117,6 @@ void packet_sent_cb(const uint8_t* mac_addr, esp_now_send_status_t status){
 	printf(status==ESP_NOW_SEND_SUCCESS ? "ESP NOW Success\n" : status==ESP_NOW_SEND_FAIL ? "ESP NOW Fail\n" : "Unknown error occurred when sending packet\n");
 	// xEventGroupSetBits(s_evt_group, BIT(status));
 }
-
 
 //Initialize esp32 to enable send and receive
 static void initialize_esp_now_car(void){
@@ -117,7 +134,7 @@ static void initialize_esp_now_car(void){
 	const wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));  // set it to station and access point
+	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));  // set it to station and access point
 	ESP_ERROR_CHECK(esp_wifi_start());
 
 	// init ESP-NOW
@@ -144,11 +161,11 @@ void tag_handler(uint8_t* serial_no){
 	gpio_set_level(5, 0);
 
 	//NOTE: CANNOT FORGET TO FREE PACKET AFTER POPPING FROM QUEUE
-	packet_tag* packet = malloc(sizeof(packet_tag));
-	const uint8_t DEST_MAC[] = TOWER_MAC_ADDR;
-	const uint8_t SRC_MAC[] = CAR2_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
-	memcpy(packet->dest_mac, DEST_MAC, MAC_LEN);
-	memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
+	tag_packet* packet = malloc(sizeof(tag_packet));
+	// const uint8_t DEST_MAC[] = TOWER_MAC_ADDR;
+	// const uint8_t SRC_MAC[] = CAR2_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
+	// memcpy(packet->dest_mac, DEST_MAC, MAC_LEN);
+	// memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
 	memcpy(packet->tag_id, serial_no, TAG_LEN); // read data from tag reader module
 	xQueueSend(tag_q, packet, portMAX_DELAY);
 }
@@ -171,13 +188,15 @@ void app_main(void) {
 	// };
 	// gpio_config(&pin_config);
 	// gpio_set_level(18, 1);
-	recv_q = xQueueCreate(10, sizeof(packet_t));
-	tag_q = xQueueCreate(10, sizeof(packet_t));
+	ctrl_recv_q = xQueueCreate(10, sizeof(controls_packet));
+	tag_q = xQueueCreate(10, sizeof(tag_packet));
+	tower_recv_q = xQueueCreate(10, sizeof(modifier_packet));
 	rc522_start(start_args);
 
 	initialize_esp_now_car();
 
-	xTaskCreate(queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
-	xTaskCreate(queue_send_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);
+	xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
+	xTaskCreate(queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
+	xTaskCreate(tower_queue_process_task, "Receive_from_controller", 2048, NULL, 3, NULL);
 	// xTaskCreate(send_info, "Send_info_to_Tower", 2048, NULL, 2, NULL);
 }

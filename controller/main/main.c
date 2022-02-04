@@ -44,7 +44,7 @@ void package_data(packet_t* packet){
 static void send_info(void* args){
 	packet_t* packet = malloc(sizeof(packet_t));
 	esp_err_t err;
-	const uint8_t DEST_MAC[] = CAR_MAC_ADDR;
+	const uint8_t DEST_MAC[] = CAR2_MAC_ADDR;
 	for(;;){
 		package_data(packet);
 		if((err = esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(packet_t))) != ESP_OK){
@@ -93,7 +93,7 @@ static void initialize_esp_now_controller(void){
 	ESP_ERROR_CHECK(esp_now_set_pmk((uint8_t*)CONFIG_ESPNOW_PMK)); // maybe dont need it since we're not encrypting packets
 
 	const esp_now_peer_info_t dest_peer = {
-		.peer_addr = CAR_MAC_ADDR,
+		.peer_addr = CAR2_MAC_ADDR,
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
