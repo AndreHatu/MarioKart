@@ -20,7 +20,7 @@ typedef struct __attribute__((packed)) {
 	bool right;
 } packet_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
 	uint8_t sender_mac_addr[6];
 	packet_t data;
 } recv_packet_t;
@@ -32,7 +32,7 @@ typedef struct __attribute__((packed)) {
 	uint8_t tag_id[5];
 } packet_tag;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
 	uint8_t sender_mac_addr[6];
 	packet_tag data;
 } recv_packet_tag;
@@ -44,7 +44,7 @@ typedef struct __attribute__((packed)) {
 	uint8_t modifier[5];
 } packet_modifier;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
 	uint8_t sender_mac_addr[6];
 	packet_modifier data;
 } recv_packet_modifier;
