@@ -25,11 +25,28 @@ typedef struct {
 	packet_t data;
 } recv_packet_t;
 
-//send data struct(car->tower)
+//send data struct(car->tower) :: NFC tag information
 typedef struct __attribute__((packed)) {
 	uint8_t src_mac[6];
 	uint8_t dest_mac[6];
 	uint8_t tag_id[5];
 } packet_tag;
+
+typedef struct {
+	uint8_t sender_mac_addr[6];
+	packet_tag data;
+} recv_packet_tag;
+
+//send data struct(tower->car) :: modifier information
+typedef struct __attribute__((packed)) {
+	uint8_t src_mac[6];
+	uint8_t dest_mac[6];
+	uint8_t modifier[5];
+} packet_modifier;
+
+typedef struct {
+	uint8_t sender_mac_addr[6];
+	packet_modifier data;
+} recv_packet_modifier;
 
 #endif
