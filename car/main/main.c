@@ -17,6 +17,10 @@
 
 #include "../../config/mario_kart_config.h"
 
+// NOTE: change accordingly
+#define TOWER CONTROLLER2_MAC_ADDR
+
+
 static xQueueHandle ctrl_recv_q;
 static xQueueHandle tag_q;
 static xQueueHandle tower_recv_q;
@@ -37,15 +41,19 @@ void print_packet(controls_packet packet){
 // 	vTaskDelay(5000 / portTICK_PERIOD_MS);
 // }
 
-static void queue_send_task(void *p) // sending rfid tag info to central tower
+static void tag_queue_send_task(void *p) // sending rfid tag info to central tower
 {
-	tag_packet* packet = NULL;
-	const uint8_t DEST_MAC[] = TOWER_MAC_ADDR;
+	tag_packet* packet = malloc(sizeof(tag_packet));
+	const uint8_t DEST_MAC[] = TOWER; // TOWER_MAC_ADDR, changed for testing
+	esp_err_t err;
 	while(1)
 	{
+		ESP_LOGI("Car", "Trying to send packet to tower");
 		if (xQueueReceive(tag_q, packet, portMAX_DELAY) == pdTRUE){
-			if(esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(tag_packet)) != ESP_OK){
-				ESP_LOGE("Car", "Error sending packet to tower\n");
+			ESP_LOGI("Car", "Sending packet to tower");
+			if((err = esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(tag_packet))) != ESP_OK){
+				ESP_LOGE("Car", "Error sending packet to tower");
+				printf("Error: %x\n", err);
 			}
 		}
 		else{
@@ -61,6 +69,7 @@ static void ctrl_queue_process_task(void *p)
     ESP_LOGI("Car", "Listening_to_controls");
     for(;;)
     {
+		ESP_LOGI("Car", "Trying to process controls packet");
         if(xQueueReceive(ctrl_recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
         {
             print_packet(recv_packet);
@@ -75,6 +84,7 @@ static void tower_queue_process_task(void *p)
     ESP_LOGI("Car", "Listening_to_modifiers");
     for(;;)
     {
+		ESP_LOGI("Car", "Trying to process modifier packet");
         if(xQueueReceive(tower_recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
         {
             // print_packet(recv_packet);
@@ -145,8 +155,8 @@ static void initialize_esp_now_car(void){
 
 	// add tower as peer
 	const esp_now_peer_info_t dest_peer = {
-		.peer_addr = TOWER_MAC_ADDR,
-		.channel = 2,
+		.peer_addr = TOWER,
+		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
 	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer));
@@ -170,14 +180,26 @@ void tag_handler(uint8_t* serial_no){
 	xQueueSend(tag_q, packet, portMAX_DELAY);
 }
 
+static void test_comm_task(void* p){
+	static uint8_t i = 0;
+	static tag_packet packet;
+	for(;;){
+		// tag_packet *packet = malloc(sizeof(tag_packet));
+		packet.tag_id[0] = i;
+		i++;
+		xQueueSend(tag_q, &packet, portMAX_DELAY);
+		vTaskDelay(100 * portTICK_PERIOD_MS);
+	}
+}
+
 void app_main(void) {
-	const rc522_start_args_t start_args = {
-		.miso_io = 25,
-		.mosi_io = 23,
-		.sck_io = 19,
-		.sda_io = 22,
-		.callback = &tag_handler
-	};
+	// const rc522_start_args_t start_args = {
+	// 	.miso_io = 25,
+	// 	.mosi_io = 23,
+	// 	.sck_io = 19,
+	// 	.sda_io = 22,
+	// 	.callback = &tag_handler
+	// };
 
 	// const gpio_config_t pin_config = {
 	// 	.pin_bit_mask = (1ULL << 5) | (1ULL << 10) | (1ULL << 18),
@@ -191,12 +213,12 @@ void app_main(void) {
 	ctrl_recv_q = xQueueCreate(10, sizeof(controls_packet));
 	tag_q = xQueueCreate(10, sizeof(tag_packet));
 	tower_recv_q = xQueueCreate(10, sizeof(modifier_packet));
-	rc522_start(start_args);
+	// rc522_start(start_args);
 
 	initialize_esp_now_car();
 
 	xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
-	xTaskCreate(queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
+	xTaskCreate(tag_queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
 	xTaskCreate(tower_queue_process_task, "Receive_from_controller", 2048, NULL, 3, NULL);
-	// xTaskCreate(send_info, "Send_info_to_Tower", 2048, NULL, 2, NULL);
+	xTaskCreate(test_comm_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);
 }
