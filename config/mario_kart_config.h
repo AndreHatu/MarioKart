@@ -16,7 +16,6 @@
 #define 	   CAR2_MAC_ADDR {0x1c, 0x9d, 0xc2, 0x35, 0xa9, 0x18}
 #define 	  TOWER_MAC_ADDR {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4}
 
-
 //Struct for packets being sent from controller to car
 typedef struct __attribute__((packed)) {
 	bool up;

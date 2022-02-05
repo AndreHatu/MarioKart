@@ -188,18 +188,18 @@ static void test_comm_task(void* p){
 		packet.tag_id[0] = i;
 		i++;
 		xQueueSend(tag_q, &packet, portMAX_DELAY);
-		vTaskDelay(100 * portTICK_PERIOD_MS);
+		vTaskDelay(35*portTICK_PERIOD_MS);
 	}
 }
 
 void app_main(void) {
-	// const rc522_start_args_t start_args = {
-	// 	.miso_io = 25,
-	// 	.mosi_io = 23,
-	// 	.sck_io = 19,
-	// 	.sda_io = 22,
-	// 	.callback = &tag_handler
-	// };
+	const rc522_start_args_t start_args = {
+		.miso_io = 25,
+		.mosi_io = 23,
+		.sck_io = 19,
+		.sda_io = 22,
+		.callback = &tag_handler
+	};
 
 	// const gpio_config_t pin_config = {
 	// 	.pin_bit_mask = (1ULL << 5) | (1ULL << 10) | (1ULL << 18),
@@ -213,7 +213,7 @@ void app_main(void) {
 	ctrl_recv_q = xQueueCreate(10, sizeof(controls_packet));
 	tag_q = xQueueCreate(10, sizeof(tag_packet));
 	tower_recv_q = xQueueCreate(10, sizeof(modifier_packet));
-	// rc522_start(start_args);
+	rc522_start(start_args);
 
 	initialize_esp_now_car();
 
