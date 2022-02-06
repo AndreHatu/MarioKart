@@ -6,6 +6,11 @@ Schematics and wiring will be posted in the near future.
 ECE477 Senior Design at Purdue University.
 
 
+## How it works
+We control RC cars with electronics replaced by our own ESP32. All communications are made using ESP-NOW, which is a Wi-Fi like wireless communication protocol. It enables low latency and long distance transmission of packets, with the only restriction they must be less than 250 bytes long.
+Then, we place checkpoint towers and power-up blocks along the desired track and when cars run over them, a NFC tag is read and its information is sent to a central tower, which either updates records of checkpoints or determines what modifier to give the cars. Modifiers are randomly chosen using ESP's ```esp_random()``` function. Checkpoints are stored in two-dimensional arrays initialized upon race creation.
+
+
 ## Config, Build and Flash
 To build, you will need to have installed Espressif's idf from their website.
 Then run the following commands from a terminal.
