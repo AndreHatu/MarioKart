@@ -1,6 +1,5 @@
-/.vscode/settings.json
-car/build
-controller/build
-tower/build
+**/.vscode/settings.json
+**/build/
+build/
 sdkconfig
 sdkconfig.old

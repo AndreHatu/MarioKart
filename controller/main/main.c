@@ -13,17 +13,17 @@
 #include "esp_now.h"
 #include "esp_system.h"
 #include "esp_sleep.h"
-#include "mario_kart_config.h"
 
 #include "../../config/mario_kart_config.h"
 
+#define CAR CAR1_MAC_ADDR
 //BIG BRDB:   3c:61:05:7d:e0:88
 //SMALL BRDB: 3c:61:05:7d:dd:a4
 
 #define GPIO_INPUT_0 26
 #define GPIO_INPUT_1 33
-#define GPIO_INPUT_2 36
-#define GPIO_INPUT_3 37
+#define GPIO_INPUT_2 23
+#define GPIO_INPUT_3 22
 #define GPIO_INPUT_PIN_SELECT ((1ULL<<GPIO_INPUT_0)|(1ULL<<GPIO_INPUT_1)|(1ULL<<GPIO_INPUT_2)|(1ULL<<GPIO_INPUT_3))
 
 // static xQueueHandle gpio_event_q = NULL;
@@ -35,7 +35,7 @@ static EventGroupHandle_t s_evt_group;
 // 	}
 // }
 
-void package_data(packet_t* packet){
+void package_data(controls_packet* packet){
 	packet->up = (bool)gpio_get_level(GPIO_INPUT_0);
 	packet->down = (bool)gpio_get_level(GPIO_INPUT_1);
 	packet->left = (bool)gpio_get_level(GPIO_INPUT_2);
@@ -43,31 +43,37 @@ void package_data(packet_t* packet){
 }
 
 static void send_info(void* args){
-	packet_t* packet = malloc(sizeof(packet_t));
+	controls_packet* packet = malloc(sizeof(controls_packet));
 	esp_err_t err;
-	const uint8_t DEST_MAC[] = CAR_MAC_ADDR;
+	const uint8_t DEST_MAC[] = CAR;
+	EventBits_t bits;
 	for(;;){
 		package_data(packet);
-		if((err = esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(packet_t))) != ESP_OK){
+		if((err = esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(controls_packet))) != ESP_OK){
 			printf("Error sending packet: %x\n", err);
 		}
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
-		// EventBits_t bits = xEventGroupWaitBits(s_evt_group, BIT(ESP_NOW_SEND_SUCCESS) | BIT(ESP_NOW_SEND_FAIL), pdTRUE, pdFALSE, 2000 / portTICK_PERIOD_MS);
-		// if(!(bits & BIT(ESP_NOW_SEND_SUCCESS))){
-		// 	if(bits & BIT(ESP_NOW_SEND_FAIL)){
-		// 		ESP_LOGE("Controller", "Send Error");
-		// 		break;
-		// 	}
-		// }
-	}
+		bits = xEventGroupWaitBits(s_evt_group, BIT(ESP_NOW_SEND_SUCCESS) | BIT(ESP_NOW_SEND_FAIL), pdTRUE, pdFALSE, 2000 / portTICK_PERIOD_MS);
+		if(!(bits & BIT(ESP_NOW_SEND_SUCCESS))){
+			if (bits & BIT(ESP_NOW_SEND_FAIL)){
+				ESP_LOGE("Controller", "Send error");
+				// return ESP_FAIL;
+			}
+        ESP_LOGE("Controller", "Send timed out");
+		}
+        else{
+			ESP_LOGI("Controller", "Sent!");
+		}
+		vTaskDelay(portTICK_RATE_MS);
+    }
 }
+
 
 void packet_sent_cb(const uint8_t* mac_addr, esp_now_send_status_t status){
 	if(mac_addr==NULL){
 		ESP_LOGE("Controller", "Send cb mac error");
 		return;
 	}
-	printf(status==ESP_NOW_SEND_SUCCESS ? "ESP NOW Success\n" : status==ESP_NOW_SEND_FAIL ? "ESP NOW Fail\n" : "Unknown error occurred when sending packet\n");
+	// printf(status==ESP_NOW_SEND_SUCCESS ? "ESP NOW Success\n" : status==ESP_NOW_SEND_FAIL ? "ESP NOW Fail\n" : "Unknown error occurred when sending packet\n");
 	xEventGroupSetBits(s_evt_group, BIT(status));
 }
 
@@ -85,7 +91,7 @@ static void initialize_esp_now_controller(void){
 	const wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));  // set it to station and access point
+	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 	ESP_ERROR_CHECK(esp_wifi_start());
 
 
@@ -94,7 +100,7 @@ static void initialize_esp_now_controller(void){
 	ESP_ERROR_CHECK(esp_now_set_pmk((uint8_t*)CONFIG_ESPNOW_PMK)); // maybe dont need it since we're not encrypting packets
 
 	const esp_now_peer_info_t dest_peer = {
-		.peer_addr = CAR_MAC_ADDR,
+		.peer_addr = CAR,
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};

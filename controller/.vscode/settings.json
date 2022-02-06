@@ -1,9 +1,10 @@
 {
     "idf.adapterTargetName": "esp32",
-    "idf.portWin": "COM6",
+    "idf.portWin": "COM7",
     "files.associations": {
         "*.cfg": "cfg",
         "*.vh": "systemverilog",
-        "esp_now.h": "c"
+        "esp_now.h": "c",
+        "esp_sleep.h": "c"
     }
 }
