@@ -174,6 +174,7 @@ void tag_handler(uint8_t* serial_no){
 	memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
 	memcpy(packet->tag_id, serial_no, TAG_LEN); // read data from tag reader module
 	xQueueSend(tag_q, packet, portMAX_DELAY);
+	free(packet);
 }
 
 // static void test_comm_task(void* p){

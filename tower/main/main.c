@@ -30,6 +30,7 @@ void tag_handler(tag_packet packet){
 	if(xQueueSend(modifier_q, send_packet, portMAX_DELAY) != pdTRUE){
 		ESP_LOGW("Tower", "Modifier Queue Full");
 	}
+	free(send_packet);
 }
 
 //receive data from car (NFC tag information)
