@@ -13,6 +13,10 @@ Then run the following commands from a terminal.
 ```
 idf.py set-target esp32
 idf.py menuconfig
+```
+Inside the menuconfig, you might need to set the ```Components->freeRTOS->Run only on first core``` option in case your ESP32 only has one core (like the ones we are using for the project)
+Then you can build and flash with
+```
 idf.py build
 idf.py -p (PORT) flash
 ```
