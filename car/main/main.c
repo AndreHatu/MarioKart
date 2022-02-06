@@ -19,6 +19,10 @@
 
 // NOTE: change accordingly
 #define TOWER CONTROLLER2_MAC_ADDR
+#define MOTOR_PIN_BW 12
+#define MOTOR_PIN_FW 13
+#define MOTOR_PIN_LEFT 4
+#define MOTOR_PIN_RIGHT 9
 
 
 static xQueueHandle ctrl_recv_q;
@@ -27,19 +31,15 @@ static xQueueHandle tower_recv_q;
 
 
 void print_packet(controls_packet packet){
-	printf(packet.left ? "left |" : "     |");
-	printf(packet.right ? "right |" : "      |");
-	printf(packet.up ? "up |" : "   |");
-	printf(packet.down ? "down \n" : "     \n");
+	// printf(packet.left ? "left |" : "     |");
+	// printf(packet.right ? "right |" : "      |");
+	// printf(packet.up ? "up |" : "   |");
+	// printf(packet.down ? "down \n" : "     \n");
+	gpio_set_level(MOTOR_PIN_FW, packet.up);
+	gpio_set_level(MOTOR_PIN_BW, packet.down);
+	gpio_set_level(MOTOR_PIN_LEFT, packet.left);
+	gpio_set_level(MOTOR_PIN_RIGHT, packet.right);
 }
-
-//send data to tower process
-// static void send_info(void* args){
-// 	if((err = esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(packet_tag))) != ESP_OK){
-// 			printf("Error sending packet: %x\n", err);
-// 	}
-// 	vTaskDelay(5000 / portTICK_PERIOD_MS);
-// }
 
 static void tag_queue_send_task(void *p) // sending rfid tag info to central tower
 {
@@ -69,7 +69,7 @@ static void ctrl_queue_process_task(void *p)
     ESP_LOGI("Car", "Listening_to_controls");
     for(;;)
     {
-		ESP_LOGI("Car", "Trying to process controls packet");
+		// ESP_LOGI("Car", "Trying to process controls packet");
         if(xQueueReceive(ctrl_recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
         {
             print_packet(recv_packet);
@@ -173,26 +173,46 @@ void tag_handler(uint8_t* serial_no){
 	//NOTE: CANNOT FORGET TO FREE PACKET AFTER POPPING FROM QUEUE
 	tag_packet* packet = malloc(sizeof(tag_packet));
 	// const uint8_t DEST_MAC[] = TOWER_MAC_ADDR;
-	// const uint8_t SRC_MAC[] = CAR2_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
+	const uint8_t SRC_MAC[] = CAR1_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
 	// memcpy(packet->dest_mac, DEST_MAC, MAC_LEN);
-	// memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
+	memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
 	memcpy(packet->tag_id, serial_no, TAG_LEN); // read data from tag reader module
 	xQueueSend(tag_q, packet, portMAX_DELAY);
 }
 
-static void test_comm_task(void* p){
-	static uint8_t i = 0;
-	static tag_packet packet;
-	for(;;){
-		// tag_packet *packet = malloc(sizeof(tag_packet));
-		packet.tag_id[0] = i;
-		i++;
-		xQueueSend(tag_q, &packet, portMAX_DELAY);
-		vTaskDelay(35*portTICK_PERIOD_MS);
-	}
-}
+// static void test_comm_task(void* p){
+// 	static uint8_t i = 0;
+// 	static tag_packet packet;
+// 	for(;;){
+// 		// tag_packet *packet = malloc(sizeof(tag_packet));
+// 		packet.tag_id[0] = i;
+// 		i++;
+// 		xQueueSend(tag_q, &packet, portMAX_DELAY);
+// 		vTaskDelay(35*portTICK_PERIOD_MS);
+// 	}
+// }
+
+// void print_outputs(void* p){
+// 	// bool alternate = true;
+// 	for(;;){
+// 		printf("Pin 12: %d, Pin 13: %d, Pin 4: %d, Pin 5: %d\n", gpio_get_level(MOTOR_PIN_FW),  gpio_get_level(MOTOR_PIN_BW),  gpio_get_level(MOTOR_PIN_LEFT),  gpio_get_level(MOTOR_PIN_RIGHT));
+// 		// gpio_set_level(alternate ? MOTOR_PIN_BW : MOTOR_PIN_FW, 1);
+// 		// gpio_set_level(alternate ? MOTOR_PIN_FW : MOTOR_PIN_BW, 0);
+// 		// alternate = !alternate;
+// 		vTaskDelay(500 / portTICK_PERIOD_MS);
+// 	}
+// }
 
 void app_main(void) {
+		const gpio_config_t pin_config = {
+		.pin_bit_mask = (1ULL << 5) | (1ULL << 10) | (1ULL << 18),
+		.mode = GPIO_MODE_INPUT,
+		.intr_type = GPIO_INTR_DISABLE,
+		.pull_down_en = 0,
+		.pull_up_en = 1
+	};
+	ESP_ERROR_CHECK(gpio_config(&pin_config));
+	gpio_set_level(18, 1);
 	const rc522_start_args_t start_args = {
 		.miso_io = 25,
 		.mosi_io = 23,
@@ -200,25 +220,27 @@ void app_main(void) {
 		.sda_io = 22,
 		.callback = &tag_handler
 	};
+	ESP_ERROR_CHECK(rc522_start(start_args));
 
-	// const gpio_config_t pin_config = {
-	// 	.pin_bit_mask = (1ULL << 5) | (1ULL << 10) | (1ULL << 18),
-	// 	.mode = GPIO_MODE_INPUT,
-	// 	.intr_type = GPIO_INTR_DISABLE,
-	// 	.pull_down_en = 0,
-	// 	.pull_up_en = 1
-	// };
-	// gpio_config(&pin_config);
-	// gpio_set_level(18, 1);
-	ctrl_recv_q = xQueueCreate(10, sizeof(controls_packet));
+	const gpio_config_t pin_config1 = {
+		.pin_bit_mask = ((1ULL << MOTOR_PIN_BW) | (1ULL << MOTOR_PIN_FW) | (1ULL << MOTOR_PIN_LEFT) | (1ULL << MOTOR_PIN_RIGHT)),
+		.mode = GPIO_MODE_OUTPUT, //GPIO_MODE_OUTPUT,
+		.intr_type = GPIO_INTR_DISABLE,
+		.pull_down_en = 0,
+		.pull_up_en = 0
+	};
+	ESP_ERROR_CHECK(gpio_config(&pin_config1));
+
+	ctrl_recv_q = xQueueCreate(20, sizeof(controls_packet));
 	tag_q = xQueueCreate(10, sizeof(tag_packet));
 	tower_recv_q = xQueueCreate(10, sizeof(modifier_packet));
-	rc522_start(start_args);
+
 
 	initialize_esp_now_car();
 
 	xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
 	xTaskCreate(tag_queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
 	xTaskCreate(tower_queue_process_task, "Receive_from_controller", 2048, NULL, 3, NULL);
-	xTaskCreate(test_comm_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);
+	// xTaskCreate(test_comm_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);
+	// xTaskCreate(print_outputs, "Print_GPIO_outputs", 2048, NULL, 1, NULL);
 }

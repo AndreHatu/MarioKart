@@ -32,6 +32,7 @@ typedef struct __attribute__((packed)) {
 
 //send data struct(car->tower) :: NFC tag information
 typedef struct __attribute__((packed)) {
+	uint8_t src_mac[MAC_LEN];
 	uint8_t tag_id[TAG_LEN];
 } tag_packet;
 

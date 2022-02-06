@@ -16,7 +16,7 @@
 
 #include "../../config/mario_kart_config.h"
 
-#define CAR CAR2_MAC_ADDR
+#define CAR CAR1_MAC_ADDR
 //BIG BRDB:   3c:61:05:7d:e0:88
 //SMALL BRDB: 3c:61:05:7d:dd:a4
 
@@ -46,28 +46,34 @@ static void send_info(void* args){
 	controls_packet* packet = malloc(sizeof(controls_packet));
 	esp_err_t err;
 	const uint8_t DEST_MAC[] = CAR;
+	EventBits_t bits;
 	for(;;){
 		package_data(packet);
 		if((err = esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(controls_packet))) != ESP_OK){
 			printf("Error sending packet: %x\n", err);
 		}
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
-		// EventBits_t bits = xEventGroupWaitBits(s_evt_group, BIT(ESP_NOW_SEND_SUCCESS) | BIT(ESP_NOW_SEND_FAIL), pdTRUE, pdFALSE, 2000 / portTICK_PERIOD_MS);
-		// if(!(bits & BIT(ESP_NOW_SEND_SUCCESS))){
-		// 	if(bits & BIT(ESP_NOW_SEND_FAIL)){
-		// 		ESP_LOGE("Controller", "Send Error");
-		// 		break;
-		// 	}
-		// }
-	}
+		bits = xEventGroupWaitBits(s_evt_group, BIT(ESP_NOW_SEND_SUCCESS) | BIT(ESP_NOW_SEND_FAIL), pdTRUE, pdFALSE, 2000 / portTICK_PERIOD_MS);
+		if(!(bits & BIT(ESP_NOW_SEND_SUCCESS))){
+			if (bits & BIT(ESP_NOW_SEND_FAIL)){
+				ESP_LOGE("Controller", "Send error");
+				// return ESP_FAIL;
+			}
+        ESP_LOGE("Controller", "Send timed out");
+		}
+        else{
+			ESP_LOGI("Controller", "Sent!");
+		}
+		vTaskDelay(portTICK_RATE_MS);
+    }
 }
+
 
 void packet_sent_cb(const uint8_t* mac_addr, esp_now_send_status_t status){
 	if(mac_addr==NULL){
 		ESP_LOGE("Controller", "Send cb mac error");
 		return;
 	}
-	printf(status==ESP_NOW_SEND_SUCCESS ? "ESP NOW Success\n" : status==ESP_NOW_SEND_FAIL ? "ESP NOW Fail\n" : "Unknown error occurred when sending packet\n");
+	// printf(status==ESP_NOW_SEND_SUCCESS ? "ESP NOW Success\n" : status==ESP_NOW_SEND_FAIL ? "ESP NOW Fail\n" : "Unknown error occurred when sending packet\n");
 	xEventGroupSetBits(s_evt_group, BIT(status));
 }
 
