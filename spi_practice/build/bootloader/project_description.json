@@ -1,0 +1,21 @@
+{
+    "project_name":       "bootloader",
+    "project_path":       "C:/Apps/ESP-IDF/components/bootloader/subproject",
+    "build_dir":          "C:/Users/dqhuy/477/MarioKart/spi_practice/build/bootloader",
+    "config_file":        "C:/Users/dqhuy/477/MarioKart/spi_practice/sdkconfig",
+    "config_defaults":    "",
+    "app_elf":            "bootloader.elf",
+    "app_bin":            "bootloader.bin",
+    "git_revision":       "v4.4-rc1-dirty",
+    "target":             "esp32",
+    "rev":                "0",
+    "phy_data_partition": "",
+    "monitor_baud" :      "115200",
+    "monitor_toolprefix": "xtensa-esp32-elf-",
+    "config_environment" : {
+        "COMPONENT_KCONFIGS" : "C:/Apps/ESP-IDF/components/efuse/Kconfig;C:/Apps/ESP-IDF/components/esp32/Kconfig;C:/Apps/ESP-IDF/components/esp_common/Kconfig;C:/Apps/ESP-IDF/components/esp_hw_support/Kconfig;C:/Apps/ESP-IDF/components/esp_system/Kconfig;C:/Apps/ESP-IDF/components/freertos/Kconfig;C:/Apps/ESP-IDF/components/hal/Kconfig;C:/Apps/ESP-IDF/components/log/Kconfig;C:/Apps/ESP-IDF/components/newlib/Kconfig;C:/Apps/ESP-IDF/components/spi_flash/Kconfig",
+        "COMPONENT_KCONFIGS_PROJBUILD" : "C:/Apps/ESP-IDF/components/bootloader/Kconfig.projbuild;C:/Apps/ESP-IDF/components/esp_rom/Kconfig.projbuild;C:/Apps/ESP-IDF/components/esptool_py/Kconfig.projbuild;C:/Apps/ESP-IDF/components/partition_table/Kconfig.projbuild"
+    },
+    "build_components" : [ "bootloader", "bootloader_support", "efuse", "esp32", "esp_common", "esp_hw_support", "esp_rom", "esp_system", "esptool_py", "freertos", "hal", "log", "main", "micro-ecc", "newlib", "partition_table", "soc", "spi_flash", "xtensa", "" ],
+    "build_component_paths" : [ "C:/Apps/ESP-IDF/components/bootloader", "C:/Apps/ESP-IDF/components/bootloader_support", "C:/Apps/ESP-IDF/components/efuse", "C:/Apps/ESP-IDF/components/esp32", "C:/Apps/ESP-IDF/components/esp_common", "C:/Apps/ESP-IDF/components/esp_hw_support", "C:/Apps/ESP-IDF/components/esp_rom", "C:/Apps/ESP-IDF/components/esp_system", "C:/Apps/ESP-IDF/components/esptool_py", "C:/Apps/ESP-IDF/components/freertos", "C:/Apps/ESP-IDF/components/hal", "C:/Apps/ESP-IDF/components/log", "C:/Apps/ESP-IDF/components/bootloader/subproject/main", "C:/Apps/ESP-IDF/components/bootloader/subproject/components/micro-ecc", "C:/Apps/ESP-IDF/components/newlib", "C:/Apps/ESP-IDF/components/partition_table", "C:/Apps/ESP-IDF/components/soc", "C:/Apps/ESP-IDF/components/spi_flash", "C:/Apps/ESP-IDF/components/xtensa", "" ]
+}
