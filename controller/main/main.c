@@ -26,14 +26,7 @@
 #define GPIO_INPUT_3 22
 #define GPIO_INPUT_PIN_SELECT ((1ULL<<GPIO_INPUT_0)|(1ULL<<GPIO_INPUT_1)|(1ULL<<GPIO_INPUT_2)|(1ULL<<GPIO_INPUT_3))
 
-// static xQueueHandle gpio_event_q = NULL;
 static EventGroupHandle_t s_evt_group;
-
-// static void gpio_event(void* args){
-// 	for(;;){
-// 		printf("up: %d, down: %d, left: %d, right: %d\n", gpio_get_level(GPIO_INPUT_0), gpio_get_level(GPIO_INPUT_1), gpio_get_level(GPIO_INPUT_2), gpio_get_level(GPIO_INPUT_3));
-// 	}
-// }
 
 void package_data(controls_packet* packet){
 	packet->up = (bool)gpio_get_level(GPIO_INPUT_0);
@@ -56,9 +49,8 @@ static void send_info(void* args){
 		if(!(bits & BIT(ESP_NOW_SEND_SUCCESS))){
 			if (bits & BIT(ESP_NOW_SEND_FAIL)){
 				ESP_LOGE("Controller", "Send error");
-				// return ESP_FAIL;
 			}
-        ESP_LOGE("Controller", "Send timed out");
+        	ESP_LOGE("Controller", "Send timed out");
 		}
         else{
 			ESP_LOGI("Controller", "Sent!");
@@ -117,10 +109,6 @@ void app_main(void) {
 	io_conf.pull_up_en = 0;
 	gpio_config(&io_conf);
 
-	// gpio_event_q = xQueueCreate(10, sizeof(uint32_t));
-	// xTaskCreate(gpio_event, "gpio_event", 1000, NULL, 10, NULL);
-	// ERROR: missing configuration for init functions
-	
 	initialize_esp_now_controller();
 	s_evt_group = xEventGroupCreate();
 	xTaskCreate(send_info, "Send_info_from_controller", 2048, NULL, 1, NULL);

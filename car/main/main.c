@@ -19,10 +19,10 @@
 
 // NOTE: change accordingly
 #define TOWER CONTROLLER2_MAC_ADDR
-#define MOTOR_PIN_BW 12
-#define MOTOR_PIN_FW 13
-#define MOTOR_PIN_LEFT 4
-#define MOTOR_PIN_RIGHT 9
+#define MOTOR_PIN_BW 12   // in3
+#define MOTOR_PIN_FW 13   // in4
+#define MOTOR_PIN_LEFT 4  // in2
+#define MOTOR_PIN_RIGHT 9 // in1
 
 
 static xQueueHandle ctrl_recv_q;
@@ -125,7 +125,6 @@ void packet_sent_cb(const uint8_t* mac_addr, esp_now_send_status_t status){
 		return;
 	}
 	printf(status==ESP_NOW_SEND_SUCCESS ? "ESP NOW Success\n" : status==ESP_NOW_SEND_FAIL ? "ESP NOW Fail\n" : "Unknown error occurred when sending packet\n");
-	// xEventGroupSetBits(s_evt_group, BIT(status));
 }
 
 //Initialize esp32 to enable send and receive
@@ -170,11 +169,8 @@ void tag_handler(uint8_t* serial_no){
 	printf("\n");
 	gpio_set_level(5, 0);
 
-	//NOTE: CANNOT FORGET TO FREE PACKET AFTER POPPING FROM QUEUE
 	tag_packet* packet = malloc(sizeof(tag_packet));
-	// const uint8_t DEST_MAC[] = TOWER_MAC_ADDR;
 	const uint8_t SRC_MAC[] = CAR1_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
-	// memcpy(packet->dest_mac, DEST_MAC, MAC_LEN);
 	memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
 	memcpy(packet->tag_id, serial_no, TAG_LEN); // read data from tag reader module
 	xQueueSend(tag_q, packet, portMAX_DELAY);
@@ -204,15 +200,7 @@ void tag_handler(uint8_t* serial_no){
 // }
 
 void app_main(void) {
-		const gpio_config_t pin_config = {
-		.pin_bit_mask = (1ULL << 5) | (1ULL << 10) | (1ULL << 18),
-		.mode = GPIO_MODE_INPUT,
-		.intr_type = GPIO_INTR_DISABLE,
-		.pull_down_en = 0,
-		.pull_up_en = 1
-	};
-	ESP_ERROR_CHECK(gpio_config(&pin_config));
-	gpio_set_level(18, 1);
+
 	const rc522_start_args_t start_args = {
 		.miso_io = 25,
 		.mosi_io = 23,
@@ -224,7 +212,7 @@ void app_main(void) {
 
 	const gpio_config_t pin_config1 = {
 		.pin_bit_mask = ((1ULL << MOTOR_PIN_BW) | (1ULL << MOTOR_PIN_FW) | (1ULL << MOTOR_PIN_LEFT) | (1ULL << MOTOR_PIN_RIGHT)),
-		.mode = GPIO_MODE_OUTPUT, //GPIO_MODE_OUTPUT,
+		.mode = GPIO_MODE_OUTPUT, //GPIO_MODE_INPUTOUTPUT, // for debugging output pins
 		.intr_type = GPIO_INTR_DISABLE,
 		.pull_down_en = 0,
 		.pull_up_en = 0
@@ -234,7 +222,6 @@ void app_main(void) {
 	ctrl_recv_q = xQueueCreate(20, sizeof(controls_packet));
 	tag_q = xQueueCreate(10, sizeof(tag_packet));
 	tower_recv_q = xQueueCreate(10, sizeof(modifier_packet));
-
 
 	initialize_esp_now_car();
 
