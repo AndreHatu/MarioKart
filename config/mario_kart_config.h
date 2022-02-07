@@ -44,6 +44,7 @@ typedef struct __attribute__((packed)) {
 
 //send data struct(tower->car) :: modifier information
 typedef struct __attribute__((packed)) {
+	uint8_t target_mac_addr[MAC_LEN];
 	uint8_t modifier;
 } modifier_packet;
 
