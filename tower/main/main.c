@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -13,11 +14,14 @@
 #include "esp_now.h"
 #include "esp_system.h"
 #include "esp_sleep.h"
+#include "strmap.h"
 
 #include "../../config/mario_kart_config.h"
 
 static xQueueHandle recv_q;
 static xQueueHandle modifier_q;
+StrMap *sm;
+char value[255];
 
 
 uint8_t random_modifier(){
@@ -31,26 +35,30 @@ uint8_t random_modifier(){
 // assign random modifier based on tag or mark checkpoint
 void tag_handler(tag_packet packet){
 	printf("Received tag packet: %02x %02x %02x %02x %02x \n", packet.tag_id[0], packet.tag_id[1], packet.tag_id[2], packet.tag_id[3], packet.tag_id[4]);
-
-	switch (hash_get(packet.tag_id)){ //need to setup hashmap
+	Car_Status my_car;
+	uint8_t other_car[MAC_LEN];
+	if (packet->src_mac[0] == CAR1_MAC_ADDR[0]){
+		memcpy(&other_car, CAR1_MAC_ADDR, MAC_LEN);
+		mycar = CAR1;
+	}
+	else{
+		memcpy(&other_car, CAR2_MAC_ADDR, MAC_LEN);	
+		mycar = CAR2;	
+	}
+	int result = sm_get(sm, packet.tag_id, buf, sizeof(buf));
+	if (result == 0){
+		return;
+	}
+	switch (value[0]){ //need to setup hashmap
 		case 'M':
 			uint8_t mod = random_modifier(); // get random modifier
 			//setup send packet
 			modifier_packet* send_packet = malloc(sizeof(modifier_packet));
 			send_packet->modifier = mod;
 
-			//get another car mac address
-			uint8_t other_car[MAC_LEN];
-			if (packet->src_mac[0] == CAR1_MAC_ADDR[0]){
-				memcpy(&other_car, CAR1_MAC_ADDR, MAC_LEN);
-			}
-			else{
-				memcpy(&other_car, CAR2_MAC_ADDR, MAC_LEN);		
-			}
-
 			//if powerup, send back to sender address, if not, send to the other car
 			if (mod == 0){ // power up
-				memcpy(&(send_packet->target_mac_addr), packet->src_mac, MAC_LEN);	
+				memcpy(&(send_packet->target_mac_addr), packet.src_mac, MAC_LEN);	
 			}
 			else{
 				memcpy(&(send_packet->target_mac_addr), other_car, MAC_LEN);	
@@ -64,7 +72,12 @@ void tag_handler(tag_packet packet){
 			
 		case 'C':
 			//figure out which car status to modify
-			uint8_t sender_car = packet->sender_mac_addr;
+			int val = value[1] - '0';
+			if (val == (my_car.checkpoint%5)+1){
+				uint8_t sender_car = packet.src_mac;
+				my_car.lap_time += packet.lap_time;
+				my_car.checkpoint = val;
+			}
 			//update lap status
 	}
 
@@ -187,6 +200,23 @@ static void initialize_esp_now_tower(void){
 	ESP_LOGI("Tower", "Adding peers");
 	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer1));
 	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer2));
+}
+
+void initialize_hash(){
+
+	sm = sm_new(10);
+	//save checkpoint
+	sm_put(sm, "", "C0");
+	sm_put(sm, "", "C1");
+	sm_put(sm, "", "C2");
+	sm_put(sm, "", "C3");
+	sm_put(sm, "", "C4");
+	//save modifier
+	sm_put(sm, "", "M1");
+	sm_put(sm, "", "M2");
+	sm_put(sm, "", "M3");
+	sm_put(sm, "", "M4");
+	sm_put(sm, "", "M1");
 }
 
 

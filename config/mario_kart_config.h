@@ -4,6 +4,7 @@
 
 #include <inttypes.h>
 #include <stdbool.h>
+#include <time.h>
 
 #define CONFIG_ESPNOW_PMK "pmk1234567890"
 #define MAC_LEN 6
@@ -15,6 +16,16 @@
 #define	CONTROLLER2_MAC_ADDR {0x1c, 0x9d, 0xc2, 0x35, 0xa9, 0x64}
 #define 	   CAR2_MAC_ADDR {0x1c, 0x9d, 0xc2, 0x35, 0xa9, 0x18}
 #define 	  TOWER_MAC_ADDR {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4}
+
+#define Car_status* CAR1 { .checkpoint = 0, .lap_time = 0 };
+#define Car_status* CAR2 { .checkpoint = 0, .lap_time = 0 };
+
+//Struct for packets being sent from controller to car
+typedef struct __attribute__((packed)) {
+	uint8_t checkpoint;
+	int64_t lap_time;
+} Car_Status;
+
 
 //Struct for packets being sent from controller to car
 typedef struct __attribute__((packed)) {
@@ -33,7 +44,8 @@ typedef struct __attribute__((packed)) {
 //send data struct(car->tower) :: NFC tag information
 typedef struct __attribute__((packed)) {
 	uint8_t src_mac[MAC_LEN];
-	uint8_t tag_id[TAG_LEN];
+	uint8_t tag_id[TAG_LEN + 1];
+	int64_t lap_time;
 } tag_packet;
 
 //struct for packet received by tower from car
@@ -53,5 +65,7 @@ typedef struct __attribute__((packed)) {
 	uint8_t sender_mac_addr[MAC_LEN];
 	modifier_packet data;
 } recv_modifier_packet;
+
+
 
 #endif
