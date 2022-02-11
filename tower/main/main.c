@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -13,23 +14,84 @@
 #include "esp_now.h"
 #include "esp_system.h"
 #include "esp_sleep.h"
+#include "strmap.h"
 
 #include "../../config/mario_kart_config.h"
 
 static xQueueHandle recv_q;
 static xQueueHandle modifier_q;
+StrMap *sm;
+char value[255];
 
+
+uint8_t random_modifier(){
+	//0: power up
+	//1: power down
+	//2: reverse control
+	//3: stop
+	return (uint8_t) (esp_random() % 4);
+}
 
 // assign random modifier based on tag or mark checkpoint
 void tag_handler(tag_packet packet){
 	printf("Received tag packet: %02x %02x %02x %02x %02x \n", packet.tag_id[0], packet.tag_id[1], packet.tag_id[2], packet.tag_id[3], packet.tag_id[4]);
+	Car_Status my_car;
+	uint8_t other_car[MAC_LEN];
+	if (packet->src_mac[0] == CAR1_MAC_ADDR[0]){
+		memcpy(&other_car, CAR1_MAC_ADDR, MAC_LEN);
+		mycar = CAR1;
+	}
+	else{
+		memcpy(&other_car, CAR2_MAC_ADDR, MAC_LEN);	
+		mycar = CAR2;	
+	}
+	int result = sm_get(sm, packet.tag_id, buf, sizeof(buf));
+	if (result == 0){
+		return;
+	}
+	switch (value[0]){ //need to setup hashmap
+		case 'M':
+			uint8_t mod = random_modifier(); // get random modifier
+			//setup send packet
+			modifier_packet* send_packet = malloc(sizeof(modifier_packet));
+			send_packet->modifier = mod;
+
+			//if powerup, send back to sender address, if not, send to the other car
+			if (mod == 0){ // power up
+				memcpy(&(send_packet->target_mac_addr), packet.src_mac, MAC_LEN);	
+			}
+			else{
+				memcpy(&(send_packet->target_mac_addr), other_car, MAC_LEN);	
+			}
+
+			//add packet to queue
+			if(xQueueSend(modifier_q, send_packet, portMAX_DELAY) != pdTRUE){
+				ESP_LOGW("Tower", "Modifier Queue Full");
+			}
+			free(send_packet);
+			
+		case 'C':
+			//figure out which car status to modify
+			int val = value[1] - '0';
+			if (val == (my_car.checkpoint%5)+1){
+				uint8_t sender_car = packet.src_mac;
+				my_car.lap_time += packet.lap_time;
+				my_car.checkpoint = val;
+			}
+			//update lap status
+	}
+
 	
 	// TODO: add all logic for either choosing and sending out modifiers or marking checkpoints
+<<<<<<< HEAD
 	modifier_packet* send_packet = malloc(sizeof(modifier_packet));
 	send_packet->modifier = 0xff;
 	if(xQueueSend(modifier_q, send_packet, portMAX_DELAY) != pdTRUE){
 		ESP_LOGW("Tower", "Modifier Queue Full");
 	}
+=======
+
+>>>>>>> fa62b43b0198d273915e042847f24d0e4006be3d
 }
 
 //receive data from car (NFC tag information)
@@ -78,7 +140,7 @@ static void queue_send_task(void* args){
 	for(;;){
 		if (xQueueReceive(modifier_q, packet, portMAX_DELAY) == pdTRUE){
 			// NOTE: need to add some switching logic to figure out if we send packet to either car or both
-			if(esp_now_send(NULL, (uint8_t*)packet, sizeof(modifier_packet)) != ESP_OK){
+			if(esp_now_send(packet->target_mac_addr, (uint8_t*)packet, sizeof(modifier_packet)) != ESP_OK){
 				// if dest_mac is NULL, packet is broadcast to all peers
 				ESP_LOGE("Car", "Error sending packet to tower\n");
 			}
@@ -148,12 +210,31 @@ static void initialize_esp_now_tower(void){
 	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer2));
 }
 
+void initialize_hash(){
+
+	sm = sm_new(10);
+	//save checkpoint
+	sm_put(sm, "", "C0");
+	sm_put(sm, "", "C1");
+	sm_put(sm, "", "C2");
+	sm_put(sm, "", "C3");
+	sm_put(sm, "", "C4");
+	//save modifier
+	sm_put(sm, "", "M1");
+	sm_put(sm, "", "M2");
+	sm_put(sm, "", "M3");
+	sm_put(sm, "", "M4");
+	sm_put(sm, "", "M1");
+}
+
 
 void app_main(void) {
 	ESP_LOGI("Tower", "In main");
 	recv_q = xQueueCreate(10, sizeof(tag_packet));
 	modifier_q = xQueueCreate(10, sizeof(modifier_packet));
 	initialize_esp_now_tower();
+
+	//setup the hash map
 
 	xTaskCreate(queue_process_task, "Receive_from_car", 2048, NULL, 2, NULL);
 	xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 2, NULL);

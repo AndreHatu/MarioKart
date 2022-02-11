@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -175,10 +176,17 @@ void tag_handler(uint8_t* serial_no){
 	printf("\n");
 	gpio_set_level(5, 0);
 
+	//time when car run voer tag
+	struct timeval tv_now;
+	gettimeofday(&tv_now, NULL);
+	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+
 	tag_packet* packet = malloc(sizeof(tag_packet));
 	const uint8_t SRC_MAC[] = CAR1_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
 	memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
 	memcpy(packet->tag_id, serial_no, TAG_LEN); // read data from tag reader module
+	memcpy(packet->tag_id + TAG_LEN, '\0', 1); // read data from tag reader module
+	memcpy(packet->lap_time, time_us, sizeof(int64_t));
 	xQueueSend(tag_q, packet, portMAX_DELAY);
 	free(packet);
 }
