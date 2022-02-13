@@ -3,3 +3,4 @@
 build/
 sdkconfig
 sdkconfig.old
+schematics/ESP32-SOLO-1_Reference_Design
