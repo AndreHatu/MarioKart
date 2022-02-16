@@ -8,5 +8,6 @@
     "files.associations": {
         "mcpwm.h": "c",
         "mcpwm_periph.h": "c"
-    }
+    },
+    "cmake.configureOnOpen": true
 }

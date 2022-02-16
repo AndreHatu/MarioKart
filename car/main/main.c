@@ -26,11 +26,12 @@
 
 // NOTE: change accordingly
 #define TOWER TOWER_MAC_ADDR
+#define CONTROLLER CONTROLLER1_MAC_ADDR
 #define MOTOR_PIN_BW 12   // in3
 #define MOTOR_PIN_FW 13   // in4
 #define MOTOR_PIN_LEFT 4  // in2
 #define MOTOR_PIN_RIGHT 9 // in1
-
+#define POWER 5 // in1
 
 static xQueueHandle ctrl_recv_q;
 static xQueueHandle tag_q;
@@ -46,7 +47,16 @@ void print_packet(controls_packet packet){
 	gpio_set_level(MOTOR_PIN_BW, packet.down);
 	gpio_set_level(MOTOR_PIN_LEFT, packet.left);
 	gpio_set_level(MOTOR_PIN_RIGHT, packet.right);
+	gpio_set_level(POWER, packet.power);
 }
+void pw_up(controls_packet packet){
+	if (packet.power){
+		brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 100.0);
+		vTaskDelay(5000 / portTICK_RATE_MS);
+		brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 50.0);
+	}
+}
+
 
 static void tag_queue_send_task(void *p) // sending rfid tag info to central tower
 {
@@ -80,6 +90,7 @@ static void ctrl_queue_process_task(void *p)
         if(xQueueReceive(ctrl_recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
         {
             print_packet(recv_packet);
+			//pw_up(recv_packet);
         }        
     }
 }
@@ -161,7 +172,7 @@ static void initialize_esp_now_car(void){
 
 	// add tower as peer
 	const esp_now_peer_info_t dest_peer = {
-		.peer_addr = TOWER,
+		.peer_addr = CONTROLLER,
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
@@ -185,7 +196,7 @@ void tag_handler(uint8_t* serial_no){
 	const uint8_t SRC_MAC[] = CAR1_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
 	memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
 	memcpy(packet->tag_id, serial_no, TAG_LEN); // read data from tag reader module
-	memcpy(packet->tag_id + TAG_LEN, '\0', 1); // read data from tag reader module
+	//memcpy(packet->tag_id + TAG_LEN, '\0', 1); // read data from tag reader module
 	memcpy(packet->lap_time, time_us, sizeof(int64_t));
 	xQueueSend(tag_q, packet, portMAX_DELAY);
 	free(packet);
@@ -236,12 +247,12 @@ void app_main(void) {
 	ESP_ERROR_CHECK(gpio_config(&pin_config1));
 
 	ctrl_recv_q = xQueueCreate(20, sizeof(controls_packet));
-	tag_q = xQueueCreate(10, sizeof(tag_packet));
-	tower_recv_q = xQueueCreate(10, sizeof(modifier_packet));
+	//tag_q = xQueueCreate(10, sizeof(tag_packet));
+	//tower_recv_q = xQueueCreate(10, sizeof(modifier_packet));
 
 	initialize_esp_now_car();
-	//mcpwm_example_config(NULL);
-	//xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
+	
+	xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
 	//xTaskCreate(tag_queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
 	//xTaskCreate(tower_queue_process_task, "Receive_from_controller", 2048, NULL, 3, NULL);
 	//xTaskCreate(test_comm_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);

@@ -33,6 +33,7 @@ typedef struct __attribute__((packed)) {
 	bool down;
 	bool left;
 	bool right;
+	bool power;
 } controls_packet;
 
 //struct for packet received by car from controller
