@@ -36,6 +36,8 @@
 static xQueueHandle ctrl_recv_q;
 static xQueueHandle tag_q;
 static xQueueHandle tower_recv_q;
+static xQueueHandle mod_q;
+static xQueueHandle active_mod_q;
 
 
 void print_packet(controls_packet packet){
@@ -47,16 +49,7 @@ void print_packet(controls_packet packet){
 	gpio_set_level(MOTOR_PIN_BW, packet.down);
 	gpio_set_level(MOTOR_PIN_LEFT, packet.left);
 	gpio_set_level(MOTOR_PIN_RIGHT, packet.right);
-	gpio_set_level(POWER, packet.power);
 }
-void pw_up(controls_packet packet){
-	if (packet.power){
-		brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 100.0);
-		vTaskDelay(5000 / portTICK_RATE_MS);
-		brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 50.0);
-	}
-}
-
 
 static void tag_queue_send_task(void *p) // sending rfid tag info to central tower
 {
@@ -90,7 +83,30 @@ static void ctrl_queue_process_task(void *p)
         if(xQueueReceive(ctrl_recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
         {
             print_packet(recv_packet);
-			//pw_up(recv_packet);
+			// User click modifier button
+			if (recv_packet.mod == true){
+				modifier_packet* mod_pack = malloc(sizeof(modifier_packet));
+				if (xQueueReceive(mod_q, mod_pack, portMAX_DELAY) ==pdTRUE){
+					if (mod_pack->modifier == 0){
+						//power up
+						brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 100.0);
+	 					vTaskDelay(5000 / portTICK_RATE_MS);
+						brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 50.0);
+					}
+					else{
+						esp_err_t err;
+						const uint8_t DEST_MAC[MAC_LEN] = CAR2_MAC_ADDR;
+						if((err = esp_now_send(DEST_MAC, (uint8_t*)mod_pack, sizeof(modifier_packet))) != ESP_OK){
+							ESP_LOGE("Car", "Error sending packet to tower");
+							printf("Error: %x\n", err);
+						}
+					}
+				}
+				else{
+					ESP_LOGI("car", "No Modifier Available");
+				}
+				free(mod_pack);
+			}
         }        
     }
 }
@@ -106,10 +122,37 @@ static void tower_queue_process_task(void *p)
         if(xQueueReceive(tower_recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
         {
             // print_packet(recv_packet);
-			printf("Received modifier\n");
-        }        
+			printf("Received modifier: %02x\n", recv_packet.modifier);
+			xQueueSend(mod_q, &recv_packet, 0);
+        }  
+		else{
+			taskYIELD();
+		}   
+
     }
 }
+
+//activate the modifier!
+static void active_mod_queue_process_task(void *p)
+{
+	active_mod_packet active_packet;
+	ESP_LOGI("Car", "Activate the Modifier");
+	for(;;)
+    {
+		ESP_LOGI("Car", "Active modifier");
+        if(xQueueReceive(active_mod_q, &active_packet, portMAX_DELAY) == pdTRUE)
+        {
+            // print_packet(recv_packet);
+			printf("Received Active modifier: %02x\n", active_packet.modifier);
+			
+        }  
+		else{
+			taskYIELD();
+		}   
+
+    }
+}
+
 
 void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
 
@@ -127,6 +170,14 @@ void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
 		static modifier_packet recv_packet;
 		memcpy(&recv_packet, data, len);
 		if (xQueueSend(tower_recv_q, &recv_packet, 0) != pdTRUE) {
+			ESP_LOGW("Car", "Modifiers Queue full, discarded");
+			return;
+		}
+	}
+	else if (len == sizeof(active_mod_packet)){
+		static active_mod_packet recv_packet;
+		memcpy(&recv_packet, data, len);
+		if (xQueueSend(active_mod_q, &recv_packet, 0) != pdTRUE) {
 			ESP_LOGW("Car", "Modifiers Queue full, discarded");
 			return;
 		}
@@ -171,12 +222,18 @@ static void initialize_esp_now_car(void){
 	ESP_ERROR_CHECK(esp_now_set_pmk((uint8_t*)CONFIG_ESPNOW_PMK)); // maybe dont need it since we're not encrypting packets
 
 	// add tower as peer
-	const esp_now_peer_info_t dest_peer = {
-		.peer_addr = CONTROLLER,
+	const esp_now_peer_info_t dest_peer1 = {
+		.peer_addr = TOWER,
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
-	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer));
+	const esp_now_peer_info_t dest_peer2 = {
+		.peer_addr = CAR2_MAC_ADDR,
+		.channel = 1,
+		.ifidx = ESP_IF_WIFI_STA
+	};
+	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer1));
+	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer2));
 }
 
 void tag_handler(uint8_t* serial_no){
@@ -193,11 +250,13 @@ void tag_handler(uint8_t* serial_no){
 	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
 
 	tag_packet* packet = malloc(sizeof(tag_packet));
-	const uint8_t SRC_MAC[] = CAR1_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
+	const uint8_t SRC_MAC[MAC_LEN] = CAR1_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
 	memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
 	memcpy(packet->tag_id, serial_no, TAG_LEN); // read data from tag reader module
-	//memcpy(packet->tag_id + TAG_LEN, '\0', 1); // read data from tag reader module
-	memcpy(packet->lap_time, time_us, sizeof(int64_t));
+
+	printf("packet with soruce addr and tag id\n");
+	//memcpy(packet->lap_time, &time_us, sizeof(struct timeval));
+	packet->lap_time = time_us;
 	xQueueSend(tag_q, packet, portMAX_DELAY);
 	free(packet);
 }
@@ -247,14 +306,18 @@ void app_main(void) {
 	ESP_ERROR_CHECK(gpio_config(&pin_config1));
 
 	ctrl_recv_q = xQueueCreate(20, sizeof(controls_packet));
-	//tag_q = xQueueCreate(10, sizeof(tag_packet));
-	//tower_recv_q = xQueueCreate(10, sizeof(modifier_packet));
+
+	tag_q = xQueueCreate(10, sizeof(tag_packet));
+	tower_recv_q = xQueueCreate(10, sizeof(modifier_packet));
+ 	mod_q = xQueueCreate(10, sizeof(modifier_packet));
+	active_mod_q = xQueueCreate(10, sizeof(active_mod_packet));
 
 	initialize_esp_now_car();
-	
+	//mcpwm_example_config(NULL);
 	xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
-	//xTaskCreate(tag_queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
-	//xTaskCreate(tower_queue_process_task, "Receive_from_controller", 2048, NULL, 3, NULL);
+	xTaskCreate(tag_queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
+	xTaskCreate(tower_queue_process_task, "Receive_from_controller", 2048, NULL, 3, NULL);
+	xTaskCreate(active_mod_queue_process_task, "Receive active modifier", 2048, NULL, 3, NULL);
 	//xTaskCreate(test_comm_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);
 	xTaskCreate(mcpwm_example_config, "mcpwm_example_config", 4096, NULL, 5, NULL);
 	// xTaskCreate(print_outputs, "Print_GPIO_outputs", 2048, NULL, 1, NULL);

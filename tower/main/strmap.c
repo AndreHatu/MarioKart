@@ -35,6 +35,7 @@
  *    along with strmap.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "strmap.h"
+#include <stdio.h>
 
 typedef struct Pair Pair;
 
@@ -113,24 +114,29 @@ int sm_get(const StrMap *map, const char *key, char *out_buf, unsigned int n_out
 	Pair *pair;
 
 	if (map == NULL) {
+		printf("map is null\n");
 		return 0;
 	}
 	if (key == NULL) {
+		printf("key is null\n");
 		return 0;
 	}
 	index = hash(key) % map->count;
 	bucket = &(map->buckets[index]);
 	pair = get_pair(bucket, key);
 	if (pair == NULL) {
+		printf("pair not found\n");
 		return 0;
 	}
 	if (out_buf == NULL && n_out_buf == 0) {
 		return strlen(pair->value) + 1;
 	}
 	if (out_buf == NULL) {
+		printf("out buff is null\n");
 		return 0;
 	}
 	if (strlen(pair->value) >= n_out_buf) {
+		printf("value is greater than the buffer size\n");
 		return 0;
 	}
 	strcpy(out_buf, pair->value);
@@ -338,7 +344,7 @@ static unsigned long hash(const char *str)
 	unsigned long hash = 5381;
 	int c;
 
-	while (c = *str++) {
+	while ((c = *(str++)) != '\0') {
 		hash = ((hash << 5) + hash) + c;
 	}
 	return hash;

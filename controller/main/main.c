@@ -16,7 +16,7 @@
 
 #include "../../config/mario_kart_config.h"
 
-#define CAR CONTROLLER2_MAC_ADDR
+#define CAR2 CAR2_MAC_ADDR
 //BIG BRDB:   3c:61:05:7d:e0:88
 //SMALL BRDB: 3c:61:05:7d:dd:a4
 
@@ -34,7 +34,7 @@ void package_data(controls_packet* packet){
 	packet->down = (bool)gpio_get_level(GPIO_INPUT_1);
 	packet->left = (bool)gpio_get_level(GPIO_INPUT_2);
 	packet->right = (bool)gpio_get_level(GPIO_INPUT_3);
-	packet->power = (bool)gpio_get_level(GPIO_INPUT_4);
+	packet->mod = (bool)gpio_get_level(GPIO_INPUT_4);
 }
 
 static void send_info(void* args){
@@ -93,7 +93,7 @@ static void initialize_esp_now_controller(void){
 	ESP_ERROR_CHECK(esp_now_set_pmk((uint8_t*)CONFIG_ESPNOW_PMK)); // maybe dont need it since we're not encrypting packets
 
 	const esp_now_peer_info_t dest_peer = {
-		.peer_addr = CAR,
+		.peer_addr = CAR2,
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};

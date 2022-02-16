@@ -17,9 +17,6 @@
 #define 	   CAR2_MAC_ADDR {0x1c, 0x9d, 0xc2, 0x35, 0xa9, 0x18}
 #define 	  TOWER_MAC_ADDR {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4}
 
-#define Car_status* CAR1 { .checkpoint = 0, .lap_time = 0 };
-#define Car_status* CAR2 { .checkpoint = 0, .lap_time = 0 };
-
 //Struct for packets being sent from controller to car
 typedef struct __attribute__((packed)) {
 	uint8_t checkpoint;
@@ -33,7 +30,7 @@ typedef struct __attribute__((packed)) {
 	bool down;
 	bool left;
 	bool right;
-	bool power;
+	bool mod;
 } controls_packet;
 
 //struct for packet received by car from controller
@@ -67,6 +64,9 @@ typedef struct __attribute__((packed)) {
 	modifier_packet data;
 } recv_modifier_packet;
 
+typedef struct __attribute__((packed)) {
+	uint8_t modifier;
+} active_mod_packet;
 
 
 #endif
