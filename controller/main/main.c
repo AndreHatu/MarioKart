@@ -40,7 +40,7 @@ void package_data(controls_packet* packet){
 static void send_info(void* args){
 	controls_packet* packet = malloc(sizeof(controls_packet));
 	esp_err_t err;
-	const uint8_t DEST_MAC[] = CAR;
+	const uint8_t DEST_MAC[] = CAR2;
 	EventBits_t bits;
 	for(;;){
 		package_data(packet);
