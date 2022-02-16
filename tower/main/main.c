@@ -20,69 +20,108 @@
 
 static xQueueHandle recv_q;
 static xQueueHandle modifier_q;
-StrMap *sm;
-char value[255];
+
+//hash map Definition for tag information
+StrMap *sm; 	 // address of the start point of the string map
+char value[4]; // buffer to copy the value of a certain key
+
+Car_Status Car1_status = { .checkpoint = 0, .lap_time = 0 };
+Car_Status Car2_status = { .checkpoint = 0, .lap_time = 0 };
 
 
 uint8_t random_modifier(){
-	//0: power up
-	//1: power down
-	//2: reverse control
-	//3: stop
+	//return values: 
+	//	0: power up
+	//	1: power down
+	//	2: reverse control
+	//	3: stop
 	return (uint8_t) (esp_random() % 4);
 }
 
 // assign random modifier based on tag or mark checkpoint
 void tag_handler(tag_packet packet){
+	//print the tag id
 	printf("Received tag packet: %02x %02x %02x %02x %02x \n", packet.tag_id[0], packet.tag_id[1], packet.tag_id[2], packet.tag_id[3], packet.tag_id[4]);
+	
+	//Figure out which car sent the tag packet (to update car status)
 	Car_Status my_car;
+	uint8_t car1[MAC_LEN] = CAR1_MAC_ADDR;
+	uint8_t car2[MAC_LEN] = CAR2_MAC_ADDR;
 	uint8_t other_car[MAC_LEN];
-	if (packet->src_mac[0] == CAR1_MAC_ADDR[0]){
-		memcpy(&other_car, CAR1_MAC_ADDR, MAC_LEN);
-		mycar = CAR1;
+
+	if (strcmp((char*)(car1), (char*)(packet.src_mac)) == 0){
+		memcpy(&other_car, car2, MAC_LEN);
+		my_car = Car1_status;
 	}
 	else{
-		memcpy(&other_car, CAR2_MAC_ADDR, MAC_LEN);	
-		mycar = CAR2;	
+		memcpy(&other_car, car2, MAC_LEN);	
+		my_car = Car2_status;	
 	}
-	int result = sm_get(sm, packet.tag_id, buf, sizeof(buf));
-	if (result == 0){
+	uint8_t id[TAG_LEN];
+	memcpy(id, packet.tag_id, TAG_LEN);
+
+	for (int i = 0; i < TAG_LEN; i++){
+		if (id[i] > 0x7f){
+			id[i] %= 0x7f;
+		}
+		if (id[i]<0x20){
+			id[i] += 0x20;
+		}
+	}
+	//Figure out whether tag is checkpoint or modifier
+	char str[TAG_LEN+1];
+	//size_t bufflen = sizeof(packet.tag_id);
+    memcpy( str, id, TAG_LEN );
+    str[TAG_LEN] = '\0'; // 'str' is now a string
+	printf("%s\n", str);
+
+	int result = sm_get(sm, str, value, sizeof(value));
+	if (result == 0){	//if tag id sent is not saved in the map
+		printf("key not found\n");
 		return;
 	}
-	switch (value[0]){ //need to setup hashmap
-		case 'M':
+
+
+	if (value[0] == 'M'){
 			uint8_t mod = random_modifier(); // get random modifier
+			printf("%02x\n", mod);
 			//setup send packet
-			modifier_packet* send_packet = malloc(sizeof(modifier_packet));
-			send_packet->modifier = mod;
+			modifier_packet* new_packet = malloc(sizeof(modifier_packet));
+			new_packet->modifier = mod;
 
 			//if powerup, send back to sender address, if not, send to the other car
 			if (mod == 0){ // power up
-				memcpy(&(send_packet->target_mac_addr), packet.src_mac, MAC_LEN);	
+				memcpy(&(new_packet->target_mac_addr), packet.src_mac, MAC_LEN);
+				
 			}
 			else{
-				memcpy(&(send_packet->target_mac_addr), other_car, MAC_LEN);	
+				memcpy(&(new_packet->target_mac_addr), other_car, MAC_LEN);	
 			}
 
 			//add packet to queue
-			if(xQueueSend(modifier_q, send_packet, portMAX_DELAY) != pdTRUE){
+			if(xQueueSend(modifier_q, new_packet, portMAX_DELAY) != pdTRUE){
 				ESP_LOGW("Tower", "Modifier Queue Full");
 			}
-			free(send_packet);
+			free(new_packet);
+			printf("Send Success\n");
+	}
 			
-		case 'C':
+	else if (value[0] == 'C'){
 			//figure out which car status to modify
+			printf("current checkpoint: %02x, lap time:%ld \n", my_car.checkpoint, (long)(my_car.lap_time));
 			int val = value[1] - '0';
-			if (val == (my_car.checkpoint%5)+1){
-				uint8_t sender_car = packet.src_mac;
+			if (val == (my_car.checkpoint%5)){
+
 				my_car.lap_time += packet.lap_time;
-				my_car.checkpoint = val;
+				my_car.checkpoint++;
+				if (my_car.checkpoint >= 5){
+					my_car.checkpoint %= 5;
+				}
 			}
 			//update lap status
+			printf("car status updated\n");
+			printf("new checkpoint: %02x, lap time:%ld \n", my_car.checkpoint, (long)(my_car.lap_time));
 	}
-
-	
-	// TODO: add all logic for either choosing and sending out modifiers or marking checkpoints
 
 }
 
@@ -128,11 +167,11 @@ static void queue_send_task(void* args){
 	// const uint8_t DEST_MAC1[] = CAR1_MAC_ADDR;
 	// const uint8_t DEST_MAC2[] = CAR2_MAC_ADDR;
 	modifier_packet* packet = malloc(sizeof(modifier_packet));
-
+	uint8_t car1[MAC_LEN] = CAR1_MAC_ADDR;
 	for(;;){
 		if (xQueueReceive(modifier_q, packet, portMAX_DELAY) == pdTRUE){
 			// NOTE: need to add some switching logic to figure out if we send packet to either car or both
-			if(esp_now_send(packet->target_mac_addr, (uint8_t*)packet, sizeof(modifier_packet)) != ESP_OK){
+			if(esp_now_send(car1, (uint8_t*)packet, sizeof(modifier_packet)) != ESP_OK){
 				// if dest_mac is NULL, packet is broadcast to all peers
 				ESP_LOGE("Car", "Error sending packet to tower\n");
 			}
@@ -205,18 +244,35 @@ static void initialize_esp_now_tower(void){
 void initialize_hash(){
 
 	sm = sm_new(10);
+	if (sm == NULL){
+		printf("string map not created \n");
+	}
 	//save checkpoint
-	sm_put(sm, "", "C0");
-	sm_put(sm, "", "C1");
-	sm_put(sm, "", "C2");
-	sm_put(sm, "", "C3");
-	sm_put(sm, "", "C4");
-	//save modifier
-	sm_put(sm, "", "M1");
-	sm_put(sm, "", "M2");
-	sm_put(sm, "", "M3");
-	sm_put(sm, "", "M4");
-	sm_put(sm, "", "M1");
+	// uint8_t id [TAG_LEN] = {0x72, 0xb5, 0x18, 0x1b, 0xc4};
+	// for (int i = 0; i < TAG_LEN; i++){
+	// 	if (id[i] > 0x7f){
+	// 		id[i] %= 0x7f;
+	// 	}
+	// 	if (id[i]<0x20){
+	// 		id[i] += 0x20;
+	// 	}
+	// }
+	// char str[TAG_LEN+1];
+    // memcpy(str, id, TAG_LEN);
+	// str[TAG_LEN] = '\0';
+	// printf("add tag: %s \n", str);
+	printf("%s", "r68;E\0");
+	//sm_put(sm, "r68;E", "C0");
+	// sm_put(sm, "1", "C1");
+	// sm_put(sm, "2", "C2");
+	// sm_put(sm, "3", "C3");
+	// sm_put(sm, "4", "C4");
+	// //save modifier
+	sm_put(sm, "r68;E", "M");
+	// sm_put(sm, "6", "M");
+	// sm_put(sm, "7", "M");
+	// sm_put(sm, "8", "M");
+	// sm_put(sm, "9", "M");
 }
 
 
@@ -227,7 +283,7 @@ void app_main(void) {
 	initialize_esp_now_tower();
 
 	//setup the hash map
-
+	initialize_hash();
 	xTaskCreate(queue_process_task, "Receive_from_car", 2048, NULL, 2, NULL);
 	xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 2, NULL);
 }

@@ -19,7 +19,7 @@
 #include "../../config/mario_kart_config.h"
 
 // NOTE: change accordingly
-#define TOWER CONTROLLER2_MAC_ADDR
+#define TOWER TOWER_MAC_ADDR
 #define MOTOR_PIN_BW 12   // in3
 #define MOTOR_PIN_FW 13   // in4
 #define MOTOR_PIN_LEFT 4  // in2
@@ -29,6 +29,7 @@
 static xQueueHandle ctrl_recv_q;
 static xQueueHandle tag_q;
 static xQueueHandle tower_recv_q;
+static xQueueHandle mod_q;
 
 
 void print_packet(controls_packet packet){
@@ -40,6 +41,8 @@ void print_packet(controls_packet packet){
 	gpio_set_level(MOTOR_PIN_BW, packet.down);
 	gpio_set_level(MOTOR_PIN_LEFT, packet.left);
 	gpio_set_level(MOTOR_PIN_RIGHT, packet.right);
+
+
 }
 
 static void tag_queue_send_task(void *p) // sending rfid tag info to central tower
@@ -89,10 +92,15 @@ static void tower_queue_process_task(void *p)
         if(xQueueReceive(tower_recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
         {
             // print_packet(recv_packet);
-			printf("Received modifier\n");
-        }        
+			printf("Received modifier: %02x\n", recv_packet.modifier);
+			xQueueSend(mod_q, &recv_packet, 0);
+        }     
+
     }
 }
+
+
+
 
 void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
 
@@ -176,11 +184,13 @@ void tag_handler(uint8_t* serial_no){
 	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
 
 	tag_packet* packet = malloc(sizeof(tag_packet));
-	const uint8_t SRC_MAC[] = CAR1_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
+	const uint8_t SRC_MAC[MAC_LEN] = CAR1_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
 	memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
 	memcpy(packet->tag_id, serial_no, TAG_LEN); // read data from tag reader module
-	memcpy(packet->tag_id + TAG_LEN, '\0', 1); // read data from tag reader module
-	memcpy(packet->lap_time, time_us, sizeof(int64_t));
+
+	printf("packet with soruce addr and tag id\n");
+	//memcpy(packet->lap_time, &time_us, sizeof(struct timeval));
+	packet->lap_time = time_us;
 	xQueueSend(tag_q, packet, portMAX_DELAY);
 	free(packet);
 }
@@ -231,6 +241,7 @@ void app_main(void) {
 	ctrl_recv_q = xQueueCreate(20, sizeof(controls_packet));
 	tag_q = xQueueCreate(10, sizeof(tag_packet));
 	tower_recv_q = xQueueCreate(10, sizeof(modifier_packet));
+ 	mod_q = xQueueCreate(10, sizeof(modifier_packet));
 
 	initialize_esp_now_car();
 
