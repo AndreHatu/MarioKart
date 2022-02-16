@@ -1,4 +1,7 @@
+set(srcs "main.c" "pwm.c"
+    )
+
 idf_component_register(
-    SRCS "main.c"
+    SRCS  ${srcs}
     INCLUDE_DIRS "."
 )

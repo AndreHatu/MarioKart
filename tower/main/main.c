@@ -123,6 +123,12 @@ void tag_handler(tag_packet packet){
 			printf("new checkpoint: %02x, lap time:%ld \n", my_car.checkpoint, (long)(my_car.lap_time));
 	}
 
+
+	modifier_packet* send_packet = malloc(sizeof(modifier_packet));
+	send_packet->modifier = 0xff;
+	if(xQueueSend(modifier_q, send_packet, portMAX_DELAY) != pdTRUE){
+		ESP_LOGW("Tower", "Modifier Queue Full");
+	}
 }
 
 //receive data from car (NFC tag information)

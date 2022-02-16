@@ -1,3 +1,0 @@
-[submodule "esp-idf-rc522"]
-	path = car/components/rc522
-	url = git@github.com:abobija/esp-idf-rc522.git

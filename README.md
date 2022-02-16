@@ -11,6 +11,10 @@ We control RC cars with electronics replaced by our own ESP32. All communication
 Then, we place checkpoint towers and power-up blocks along the desired track and when cars run over them, a NFC tag is read and its information is sent to a central tower, which either updates records of checkpoints or determines what modifier to give the cars. Modifiers are randomly chosen using ESP's ```esp_random()``` function. Checkpoints are stored in two-dimensional arrays initialized upon race creation.
 
 
+## Cloning
+When cloning this repo, make sure to use ```git clone --recursive git@github.com:AndreHatu/MarioKart.git``` or run ```git submodule update --init --recursive``` after doing a standard clone. 
+This ensures all dependencies are downloaded.
+
 ## Config, Build and Flash
 To build, you will need to have installed Espressif's idf from their website.
 Then run the following commands from a terminal.

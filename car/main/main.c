@@ -18,6 +18,12 @@
 
 #include "../../config/mario_kart_config.h"
 
+#include "driver/mcpwm.h"
+#include "soc/mcpwm_periph.h"
+#include "esp_attr.h"
+#include "soc/rtc.h"
+#include "pwm.h"
+
 // NOTE: change accordingly
 #define TOWER TOWER_MAC_ADDR
 #define MOTOR_PIN_BW 12   // in3
@@ -195,17 +201,17 @@ void tag_handler(uint8_t* serial_no){
 	free(packet);
 }
 
-// static void test_comm_task(void* p){
-// 	static uint8_t i = 0;
-// 	static tag_packet packet;
-// 	for(;;){
-// 		// tag_packet *packet = malloc(sizeof(tag_packet));
-// 		packet.tag_id[0] = i;
-// 		i++;
-// 		xQueueSend(tag_q, &packet, portMAX_DELAY);
-// 		vTaskDelay(35*portTICK_PERIOD_MS);
-// 	}
-// }
+static void test_comm_task(void* p){
+	static uint8_t i = 0;
+	static tag_packet packet;
+	for(;;){
+		// tag_packet *packet = malloc(sizeof(tag_packet));
+		packet.tag_id[0] = i;
+		i++;
+		xQueueSend(tag_q, &packet, portMAX_DELAY);
+		vTaskDelay(35*portTICK_PERIOD_MS);
+	}
+}
 
 // void print_outputs(void* p){
 // 	// bool alternate = true;
@@ -227,7 +233,8 @@ void app_main(void) {
 		.sda_io = 22,
 		.callback = &tag_handler
 	};
-	ESP_ERROR_CHECK(rc522_start(start_args));
+	// ESP_ERROR_CHECK(rc522_start(start_args));
+	rc522_start(start_args);
 
 	const gpio_config_t pin_config1 = {
 		.pin_bit_mask = ((1ULL << MOTOR_PIN_BW) | (1ULL << MOTOR_PIN_FW) | (1ULL << MOTOR_PIN_LEFT) | (1ULL << MOTOR_PIN_RIGHT)),
@@ -244,10 +251,11 @@ void app_main(void) {
  	mod_q = xQueueCreate(10, sizeof(modifier_packet));
 
 	initialize_esp_now_car();
-
-	xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
-	xTaskCreate(tag_queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
-	xTaskCreate(tower_queue_process_task, "Receive_from_controller", 2048, NULL, 3, NULL);
-	// xTaskCreate(test_comm_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);
+	//mcpwm_example_config(NULL);
+	//xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
+	//xTaskCreate(tag_queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
+	//xTaskCreate(tower_queue_process_task, "Receive_from_controller", 2048, NULL, 3, NULL);
+	//xTaskCreate(test_comm_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);
+	xTaskCreate(mcpwm_example_config, "mcpwm_example_config", 4096, NULL, 5, NULL);
 	// xTaskCreate(print_outputs, "Print_GPIO_outputs", 2048, NULL, 1, NULL);
 }
