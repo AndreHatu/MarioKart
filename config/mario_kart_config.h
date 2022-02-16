@@ -64,6 +64,9 @@ typedef struct __attribute__((packed)) {
 	modifier_packet data;
 } recv_modifier_packet;
 
+typedef struct __attribute__((packed)) {
+	uint8_t modifier;
+} active_mod_packet;
 
 
 #endif
