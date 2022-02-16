@@ -1,6 +1,6 @@
 {
 
-    "idf.portWin": "COM8",    "idf.adapterTargetName": "esp32",
+    "idf.portWin": "COM4",    "idf.adapterTargetName": "esp32",
     "idf.openOcdConfigs": [
         "interface/ftdi/esp32_devkitj_v1.cfg",
         "target/esp32.cfg"
@@ -8,11 +8,6 @@
     "files.associations": {
         "mcpwm.h": "c",
         "mcpwm_periph.h": "c"
-<<<<<<< HEAD
     },
     "cmake.configureOnOpen": true
-=======
-    }
-
->>>>>>> 44e2e1ab490f6ea9474c381970fec02bcf473bf8
 }

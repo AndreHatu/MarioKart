@@ -232,8 +232,14 @@ static void initialize_esp_now_car(void){
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
+	// const esp_now_peer_info_t dest_peer3 = {
+	// 	.peer_addr = CONTROLLER1_MAC_ADDR,
+	// 	.channel = 1,
+	// 	.ifidx = ESP_IF_WIFI_STA
+	// };
 	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer1));
 	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer2));
+	// ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer3));
 }
 
 void tag_handler(uint8_t* serial_no){
@@ -319,6 +325,6 @@ void app_main(void) {
 	xTaskCreate(tower_queue_process_task, "Receive_from_controller", 2048, NULL, 3, NULL);
 	xTaskCreate(active_mod_queue_process_task, "Receive active modifier", 2048, NULL, 3, NULL);
 	//xTaskCreate(test_comm_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);
-	xTaskCreate(mcpwm_example_config, "mcpwm_example_config", 4096, NULL, 5, NULL);
+	//xTaskCreate(mcpwm_example_config, "mcpwm_example_config", 4096, NULL, 5, NULL);
 	// xTaskCreate(print_outputs, "Print_GPIO_outputs", 2048, NULL, 1, NULL);
 }
