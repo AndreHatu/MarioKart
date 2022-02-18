@@ -14,7 +14,7 @@ Comment3 "Purdue University ECE477: Senior Design"
 Comment4 "Author: Andre Hatushikano"
 $EndDescr
 $Comp
-L ESP-SOLO-1:ESP32-SOLO-1 IC?
+L controller-rescue:ESP32-SOLO-1-ESP-SOLO-1 IC?
 U 1 1 6209664C
 P 6700 1700
 F 0 "IC?" H 7400 1965 50  0000 C CNN
