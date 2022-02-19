@@ -102,36 +102,40 @@ static void ctrl_queue_process_task(void *p)
 					mod_flag = 0;
 				}
 			}
+			/*
+			
 			else if (recv_packet.mod == true){
 				start_time = millis();
 				current_time = start_time;
 				brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 100.0);
 				mod_flag = 1;
 			}
-			// User click modifier button
-			//if (recv_packet.mod == true){
-				//modifier_packet* mod_pack = malloc(sizeof(modifier_packet));
-				//if (xQueueReceive(mod_q, mod_pack, portMAX_DELAY) ==pdTRUE){
-					//if (mod_pack->modifier == 0){
+			*/
+			//User click modifier button
+			if (recv_packet.mod == true){
+				modifier_packet* mod_pack = malloc(sizeof(modifier_packet));
+				if (xQueueReceive(mod_q, mod_pack, portMAX_DELAY) ==pdTRUE){
+					if (mod_pack->modifier == 0){
 						//power up
-						// brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 100.0);
-	 					// vTaskDelay(5000 / portTICK_RATE_MS);
-						// brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 50.0);
-					//}
-					// else{
-					// 	esp_err_t err;
-					// 	const uint8_t DEST_MAC[MAC_LEN] = CAR2_MAC_ADDR;
-					// 	if((err = esp_now_send(DEST_MAC, (uint8_t*)mod_pack, sizeof(modifier_packet))) != ESP_OK){
-					// 		ESP_LOGE("Car", "Error sending packet to tower");
-					// 		printf("Error: %x\n", err);
-					// 	}
-					// }
-				//}
-				// else{
-				// 	ESP_LOGI("car", "No Modifier Available");
-				// }
-				// free(mod_pack);
-			//}
+						start_time = millis();
+						current_time = start_time;
+						brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 100.0);
+						mod_flag = 1;
+					}
+					else{
+						esp_err_t err;
+						const uint8_t DEST_MAC[MAC_LEN] = CAR2_MAC_ADDR;
+						if((err = esp_now_send(DEST_MAC, (uint8_t*)mod_pack, sizeof(modifier_packet))) != ESP_OK){
+							ESP_LOGE("Car", "Error sending packet to tower");
+							printf("Error: %x\n", err);
+						}
+					}
+				}
+				else{
+					ESP_LOGI("car", "No Modifier Available");
+				}
+				free(mod_pack);
+			}
         }        
     }
 }
