@@ -30,9 +30,9 @@
 #define CONTROLLER1 CONTROLLER1_MAC_ADDR
 #define MOTOR_PIN_BW 12   // in3
 #define MOTOR_PIN_FW 13   // in4
-#define MOTOR_PIN_LEFT 4  // in2
-#define MOTOR_PIN_RIGHT 9 // in1
-#define MOD 15 // in1
+#define MOTOR_PIN_LEFT 2  // in2
+#define MOTOR_PIN_RIGHT 4 // in1
+//#define MOD 15 // in1
 
 static xQueueHandle ctrl_recv_q;
 static xQueueHandle tag_q;
@@ -51,11 +51,11 @@ int64_t millis() {
 }
 
 void print_packet(controls_packet packet){
-	printf(packet.left ? "left |" : "     |");
-	printf(packet.right ? "right |" : "      |");
-	printf(packet.up ? "up |" : "   |");
-	printf(packet.down ? "down \n" : "     \n");
-	printf(packet.mod ? "mod \n" : "     \n");
+	// printf(packet.left ? "left |" : "     |");
+	// printf(packet.right ? "right |" : "      |");
+	// printf(packet.up ? "up |" : "   |");
+	// printf(packet.down ? "down \n" : "     \n");
+	// printf(packet.mod ? "mod \n" : "     \n");
 	gpio_set_level(MOTOR_PIN_FW, packet.up);
 	gpio_set_level(MOTOR_PIN_BW, packet.down);
 	gpio_set_level(MOTOR_PIN_LEFT, packet.left);
@@ -97,41 +97,42 @@ static void ctrl_queue_process_task(void *p)
             print_packet(recv_packet);
 			if (mod_flag){
 				current_time = millis();
-				if (current_time - start_time >= 5000){
-					brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 50.0);
+				if (current_time - start_time >= 10000){
+					printf("start time %d current time %d", start_time, current_time);
+					brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, V0);
 					mod_flag = 0;
 				}
 			}
-			else if (recv_packet.mod == true){
-				start_time = millis();
-				current_time = start_time;
-				brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 100.0);
-				mod_flag = 1;
-			}
+
 			// User click modifier button
-			//if (recv_packet.mod == true){
-				//modifier_packet* mod_pack = malloc(sizeof(modifier_packet));
-				//if (xQueueReceive(mod_q, mod_pack, portMAX_DELAY) ==pdTRUE){
-					//if (mod_pack->modifier == 0){
+			if (recv_packet.mod == true){
+				printf("mod = 1\n");
+				modifier_packet* mod_pack = malloc(sizeof(modifier_packet));
+				if (xQueueReceive(mod_q, mod_pack, 0) ==pdTRUE){
+					printf("have something in mod queue\n");
+					if (mod_pack->modifier == 0){
+						start_time = millis();
+						current_time = start_time;
+						printf("modifier: powerup\n");
 						//power up
-						// brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 100.0);
-	 					// vTaskDelay(5000 / portTICK_RATE_MS);
-						// brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 50.0);
-					//}
-					// else{
-					// 	esp_err_t err;
-					// 	const uint8_t DEST_MAC[MAC_LEN] = CAR2_MAC_ADDR;
-					// 	if((err = esp_now_send(DEST_MAC, (uint8_t*)mod_pack, sizeof(modifier_packet))) != ESP_OK){
-					// 		ESP_LOGE("Car", "Error sending packet to tower");
-					// 		printf("Error: %x\n", err);
-					// 	}
-					// }
-				//}
-				// else{
-				// 	ESP_LOGI("car", "No Modifier Available");
-				// }
-				// free(mod_pack);
-			//}
+						brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, VSPEED);
+						mod_flag = 1;
+					}
+					else{
+						printf("modifier: something else\n");
+						// esp_err_t err;
+						// const uint8_t DEST_MAC[MAC_LEN] = CAR1_MAC_ADDR;
+						// if((err = esp_now_send(DEST_MAC, (uint8_t*)mod_pack, sizeof(modifier_packet))) != ESP_OK){
+						// 	ESP_LOGE("Car", "Error sending packet to tower");
+						// 	printf("Error: %x\n", err);
+						// }
+					}
+				}
+				else{
+					ESP_LOGI("car", "No Modifier Available");
+				}
+				free(mod_pack);
+			}
         }        
     }
 }
@@ -284,7 +285,7 @@ void tag_handler(uint8_t* serial_no){
 	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
 
 	tag_packet* packet = malloc(sizeof(tag_packet));
-	const uint8_t SRC_MAC[MAC_LEN] = CAR1_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
+	const uint8_t SRC_MAC[MAC_LEN] = CAR2_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
 	memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
 	memcpy(packet->tag_id, serial_no, TAG_LEN); // read data from tag reader module
 
@@ -295,17 +296,6 @@ void tag_handler(uint8_t* serial_no){
 	free(packet);
 }
 
-static void test_comm_task(void* p){
-	static uint8_t i = 0;
-	static tag_packet packet;
-	for(;;){
-		// tag_packet *packet = malloc(sizeof(tag_packet));
-		packet.tag_id[0] = i;
-		i++;
-		xQueueSend(tag_q, &packet, portMAX_DELAY);
-		vTaskDelay(35*portTICK_PERIOD_MS);
-	}
-}
 
 // void print_outputs(void* p){
 // 	// bool alternate = true;
@@ -318,35 +308,6 @@ static void test_comm_task(void* p){
 // 	}
 // }
 
-void activate_mod(void * arg){
-	while (1) {
-		if (mod_flag){
-			brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 100.0);
-			vTaskDelay(2000 / portTICK_RATE_MS);
-			brushed_motor_backward(MCPWM_UNIT_0, MCPWM_TIMER_0, 50.0);
-			mod_flag = 0;
-		}
-		else 
-			taskYIELD();
-    }
-	//vTaskDelete(NULL);
-}
-
-void mcpwm_example_config(void * arg)
-{
-    //brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 50.0);
-    //vTaskDelete(NULL);
-    while (1) {
-		//vTaskDelay(5000 / portTICK_RATE_MS);
-        if (1){
-			brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 100.0);
-			vTaskDelay(5000 / portTICK_RATE_MS);
-			
-			mod_flag = 0;
-		}else
-			taskYIELD();
-    }
-}
 
 
 void app_main(void) {
@@ -362,7 +323,7 @@ void app_main(void) {
 	rc522_start(start_args);
 
 	const gpio_config_t pin_config1 = {
-		.pin_bit_mask = ((1ULL << MOTOR_PIN_BW) | (1ULL << MOTOR_PIN_FW) | (1ULL << MOTOR_PIN_LEFT) | (1ULL << MOTOR_PIN_RIGHT) | (1ULL << MOD)),
+		.pin_bit_mask = ((1ULL << MOTOR_PIN_BW) | (1ULL << MOTOR_PIN_FW) | (1ULL << MOTOR_PIN_LEFT) | (1ULL << MOTOR_PIN_RIGHT)),
 		.mode = GPIO_MODE_OUTPUT, //GPIO_MODE_INPUTOUTPUT, // for debugging output pins
 		.intr_type = GPIO_INTR_DISABLE,
 		.pull_down_en = 0,
