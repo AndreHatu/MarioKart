@@ -10,9 +10,10 @@
 #include "soc/mcpwm_periph.h"
 
 #define MCPWM_GPIO_INIT 0    //select which function to use to initialize gpio signals
-#define GPIO_PWM0A_OUT 18   //Set GPIO 19 as PWM0A
+#define GPIO_PWM0A_OUT 15   //Set GPIO 19 as PWM0A
 #define GPIO_PWM0B_OUT 17  //Set GPIO 18 as PWM0B
-
+#define V0 35.0
+#define VSPEED 70.0
 
 void brushed_motor_forward(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num , float duty_cycle);
 void brushed_motor_backward(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num , float duty_cycle);
