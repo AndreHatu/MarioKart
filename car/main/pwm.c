@@ -19,12 +19,13 @@ void mcpwm_example_gpio_initialize(void)
     pwm_config.counter_mode = MCPWM_UP_COUNTER ;
     pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
     mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);  
-    brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, V0);
+    brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, V0);
+    brushed_motor_b(MCPWM_UNIT_0, MCPWM_TIMER_0, VFRONT);
 }
 
-void brushed_motor_forward(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num , float duty_cycle)
+void brushed_motor_a(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num , float duty_cycle)
 {
-    mcpwm_set_signal_low(mcpwm_num, timer_num, MCPWM_OPR_B);
+    //mcpwm_set_signal_low(mcpwm_num, timer_num, MCPWM_OPR_B);
     mcpwm_set_duty(mcpwm_num, timer_num, MCPWM_OPR_A, duty_cycle);
     mcpwm_set_duty_type(mcpwm_num, timer_num, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
 }
@@ -32,9 +33,9 @@ void brushed_motor_forward(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num , flo
 /**
  * @brief motor moves in backward direction, with duty cycle = duty %
  */
-void brushed_motor_backward(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num , float duty_cycle)
+void brushed_motor_b(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num , float duty_cycle)
 {
-    mcpwm_set_signal_low(mcpwm_num, timer_num, MCPWM_OPR_A);
+    //mcpwm_set_signal_low(mcpwm_num, timer_num, MCPWM_OPR_A);
     mcpwm_set_duty(mcpwm_num, timer_num, MCPWM_OPR_B, duty_cycle);
     mcpwm_set_duty_type(mcpwm_num, timer_num, MCPWM_OPR_B, MCPWM_DUTY_MODE_0);  //call this each time, if operator was previously in low/high state
 }
@@ -47,5 +48,7 @@ void brushed_motor_stop(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num)
     mcpwm_set_signal_low(mcpwm_num, timer_num, MCPWM_OPR_A);
     mcpwm_set_signal_low(mcpwm_num, timer_num, MCPWM_OPR_B);
 }
+
+
 
 
