@@ -130,14 +130,16 @@ static void ctrl_queue_process_task(void *p)
 					else 
 					{
 						//printf("modifier: something else\n");
-
-						
 						esp_err_t err;
-						const uint8_t DEST_MAC[MAC_LEN] = CAR2_MAC_ADDR;
-						if((err = esp_now_send(DEST_MAC, (uint8_t*)mod_pack, sizeof(modifier_packet))) != ESP_OK){
-							ESP_LOGE("Car", "Error sending packet to tower");
+						active_mod_packet * act_pack = malloc(sizeof(active_mod_packet));
+						act_pack->modifier = mod_pack->modifier;
+						printf("modifier: negative\n");
+						const uint8_t DEST_MAC[MAC_LEN] = CONTROLLER2_MAC_ADDR;
+						if((err = esp_now_send(DEST_MAC, (uint8_t*)act_pack, sizeof(active_mod_packet))) != ESP_OK){
+							ESP_LOGE("Car", "Error sending packet to different car");
 							printf("Error: %x\n", err);
 						}
+						free(act_pack);
 					}
 				}
 				else{
@@ -205,8 +207,6 @@ static void active_mod_queue_process_task(void *p)
 				brushed_motor_stop(MCPWM_UNIT_0, MCPWM_TIMER_0);
 				mod_flag = 1;
 			}
-						
-			
         }  
 		else{
 			taskYIELD();
@@ -291,7 +291,7 @@ static void initialize_esp_now_car(void){
 	};
 	
 	const esp_now_peer_info_t dest_peer2 = {
-		.peer_addr = CAR2_MAC_ADDR,
+		.peer_addr = CONTROLLER2_MAC_ADDR,
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
