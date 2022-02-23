@@ -35,8 +35,8 @@ uint8_t random_modifier(){
 	//	1: power down
 	//	2: reverse control
 	//	3: stop
-	//return (uint8_t) (esp_random() % 4);
-	return 0;
+	return (uint8_t) (esp_random() % 4);
+	//return 0;
 }
 
 // assign random modifier based on tag or mark checkpoint
