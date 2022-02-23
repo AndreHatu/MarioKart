@@ -8,5 +8,6 @@
         "mcpwm.h": "c",
         "mcpwm_periph.h": "c"
     },
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": true,
+    "idf.flashType": "UART"
 }

@@ -51,11 +51,11 @@ int64_t millis() {
 }
 
 void print_packet(controls_packet packet){
-	// printf(packet.left ? "left |" : "     |");
-	// printf(packet.right ? "right |" : "      |");
-	// printf(packet.up ? "up |" : "   |");
-	// printf(packet.down ? "down \n" : "     \n");
-	// printf(packet.mod ? "mod \n" : "     \n");
+	printf(packet.left ? "left |" : "     |");
+	printf(packet.right ? "right |" : "      |");
+	printf(packet.up ? "up |" : "   |");
+	printf(packet.down ? "down \n" : "     \n");
+	printf(packet.mod ? "mod \n" : "     \n");
 	gpio_set_level(MOTOR_PIN_FW, packet.up);
 	gpio_set_level(MOTOR_PIN_BW, packet.down);
 	gpio_set_level(MOTOR_PIN_LEFT, packet.left);
@@ -95,6 +95,7 @@ static void ctrl_queue_process_task(void *p)
         if(xQueueReceive(ctrl_recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
         {
             print_packet(recv_packet);
+			
 			if (mod_flag){
 				current_time = millis();
 				if (current_time - start_time >= 10000){
