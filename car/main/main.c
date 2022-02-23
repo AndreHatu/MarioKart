@@ -27,7 +27,7 @@
 
 // NOTE: change accordingly
 #define TOWER TOWER_MAC_ADDR
-#define CONTROLLER1 CONTROLLER1_MAC_ADDR
+#define CONTROLLER1 CAR1_MAC_ADDR
 #define MOTOR_PIN_BW 12   // in3
 #define MOTOR_PIN_FW 13   // in4
 #define MOTOR_PIN_LEFT 2  // in2
@@ -40,6 +40,7 @@ static xQueueHandle tower_recv_q;
 static xQueueHandle mod_q;
 static xQueueHandle active_mod_q;
 static bool mod_flag;
+static bool rev;
 
 int start_time;
 int current_time;
@@ -96,7 +97,7 @@ static void tag_queue_send_task(void *p) // sending rfid tag info to central tow
 static void ctrl_queue_process_task(void *p)
 {
     controls_packet recv_packet;
-	bool rev = 0;
+	rev = 0;
     ESP_LOGI("Car", "Listening_to_controls");
     for(;;){
 		// ESP_LOGI("Car", "Trying to process controls packet");
@@ -130,36 +131,13 @@ static void ctrl_queue_process_task(void *p)
 					{
 						//printf("modifier: something else\n");
 
-						if (mod_pack->modifier == 1){
-							start_time = millis();
-							//current_time = start_time;
-							printf("modifier: power down\n");
-							brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, VSLOW);
-							mod_flag = 1;
-						}
-
-						else if (mod_pack->modifier == 2){
-							start_time = millis();
-							//current_time = start_time;
-							printf("modifier: reverse control\n");
-							rev = 1;
-							mod_flag = 1;
-						}
 						
-						else if (mod_pack->modifier == 3){
-							start_time = millis()-2000;
-							//current_time = start_time;
-							printf("modifier: stop control\n");
-							brushed_motor_stop(MCPWM_UNIT_0, MCPWM_TIMER_0);
-							mod_flag = 1;
+						esp_err_t err;
+						const uint8_t DEST_MAC[MAC_LEN] = CAR2_MAC_ADDR;
+						if((err = esp_now_send(DEST_MAC, (uint8_t*)mod_pack, sizeof(modifier_packet))) != ESP_OK){
+							ESP_LOGE("Car", "Error sending packet to tower");
+							printf("Error: %x\n", err);
 						}
-						
-						// esp_err_t err;
-						// const uint8_t DEST_MAC[MAC_LEN] = CAR1_MAC_ADDR;
-						// if((err = esp_now_send(DEST_MAC, (uint8_t*)mod_pack, sizeof(modifier_packet))) != ESP_OK){
-						// 	ESP_LOGE("Car", "Error sending packet to tower");
-						// 	printf("Error: %x\n", err);
-						// }
 					}
 				}
 				else{
@@ -204,6 +182,30 @@ static void active_mod_queue_process_task(void *p)
         {
             // print_packet(recv_packet);
 			printf("Received Active modifier: %02x\n", active_packet.modifier);
+			if (active_packet.modifier == 1){
+				start_time = millis();
+				//current_time = start_time;
+				printf("modifier: power down\n");
+				brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, VSLOW);
+				mod_flag = 1;
+			}
+
+			else if (active_packet.modifier == 2){
+				start_time = millis();
+				//current_time = start_time;
+				printf("modifier: reverse control\n");
+				rev = 1;
+				mod_flag = 1;
+			}
+						
+			else if (active_packet.modifier == 3){
+				start_time = millis()-2000;
+				//current_time = start_time;
+				printf("modifier: stop control\n");
+				brushed_motor_stop(MCPWM_UNIT_0, MCPWM_TIMER_0);
+				mod_flag = 1;
+			}
+						
 			
         }  
 		else{
@@ -289,7 +291,7 @@ static void initialize_esp_now_car(void){
 	};
 	
 	const esp_now_peer_info_t dest_peer2 = {
-		.peer_addr = CAR1_MAC_ADDR,
+		.peer_addr = CAR2_MAC_ADDR,
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
@@ -330,45 +332,6 @@ void tag_handler(uint8_t* serial_no){
 	free(packet);
 }
 
-
-// void print_outputs(void* p){
-// 	// bool alternate = true;
-// 	for(;;){
-// 		printf("Pin 12: %d, Pin 13: %d, Pin 4: %d, Pin 5: %d\n", gpio_get_level(MOTOR_PIN_FW),  gpio_get_level(MOTOR_PIN_BW),  gpio_get_level(MOTOR_PIN_LEFT),  gpio_get_level(MOTOR_PIN_RIGHT));
-// 		// gpio_set_level(alternate ? MOTOR_PIN_BW : MOTOR_PIN_FW, 1);
-// 		// gpio_set_level(alternate ? MOTOR_PIN_FW : MOTOR_PIN_BW, 0);
-// 		// alternate = !alternate;
-// 		vTaskDelay(500 / portTICK_PERIOD_MS);
-// 	}
-// }
-
-//  void mcpwm_example_config(void * arg)
-// {
-// //     //1. mcpwm gpio initialization
-// //     mcpwm_example_gpio_initialize();
-
-// //     //2. initialize mcpwm configuration
-// //     //printf("Configuring Initial Parameters of mcpwm...\n");
-// //     mcpwm_config_t pwm_config;
-// //     pwm_config.frequency = 1000;    //frequency = 1000Hz
-// //     pwm_config.cmpr_a = 0;       //duty cycle of PWMxA = 80.0%
-// //     pwm_config.cmpr_b = 0;       //duty cycle of PWMxb = 30.0%
-// //     pwm_config.counter_mode = MCPWM_UP_COUNTER;
-// //     pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
-// //     mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);  
-    
-// //     brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, 50.0);
-// //     vTaskDelete(NULL);
-//     while (1) {
-//         if (mod_flag)
-//         brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, 50.0);
-//         vTaskDelay(2000 / portTICK_RATE_MS);
-//         brushed_motor_b(MCPWM_UNIT_0, MCPWM_TIMER_0, 30.0);
-//         vTaskDelay(2000 / portTICK_RATE_MS);
-//         brushed_motor_stop(MCPWM_UNIT_0, MCPWM_TIMER_0);
-//         vTaskDelay(2000 / portTICK_RATE_MS);
-//     }
-//  }
 
 void app_main(void) {
 	mod_flag =0;
