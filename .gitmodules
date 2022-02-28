@@ -1,3 +1,6 @@
 [submodule "car/components/rc522"]
 	path = car/components/rc522
 	url = git@github.com:abobija/esp-idf-rc522.git
+[submodule "tower/components/ftdrivers"]
+	path = tower/components/ftdrivers
+	url = git@github.com:RudolphRiedel/FT800-FT813.git

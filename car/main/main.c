@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <sys/time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -26,30 +27,50 @@
 
 // NOTE: change accordingly
 #define TOWER TOWER_MAC_ADDR
-#define CONTROLLER CONTROLLER1_MAC_ADDR
+#define CONTROLLER1 CAR1_MAC_ADDR
 #define MOTOR_PIN_BW 12   // in3
 #define MOTOR_PIN_FW 13   // in4
-#define MOTOR_PIN_LEFT 4  // in2
-#define MOTOR_PIN_RIGHT 9 // in1
-#define POWER 5 // in1
+#define MOTOR_PIN_LEFT 2  // in2
+#define MOTOR_PIN_RIGHT 4 // in1
+//#define MOD 15 // in1
 
 static xQueueHandle ctrl_recv_q;
 static xQueueHandle tag_q;
 static xQueueHandle tower_recv_q;
 static xQueueHandle mod_q;
 static xQueueHandle active_mod_q;
+static bool mod_flag;
+static bool rev;
 
+int start_time;
+int current_time;
 
-void print_packet(controls_packet packet){
+int64_t millis() {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
+}
+
+void print_packet(controls_packet packet, bool rev){
 	// printf(packet.left ? "left |" : "     |");
 	// printf(packet.right ? "right |" : "      |");
 	// printf(packet.up ? "up |" : "   |");
 	// printf(packet.down ? "down \n" : "     \n");
-	gpio_set_level(MOTOR_PIN_FW, packet.up);
-	gpio_set_level(MOTOR_PIN_BW, packet.down);
-	gpio_set_level(MOTOR_PIN_LEFT, packet.left);
-	gpio_set_level(MOTOR_PIN_RIGHT, packet.right);
+	// printf(packet.mod ? "mod \n" : "     \n");
+	if (!rev){
+		gpio_set_level(MOTOR_PIN_FW, packet.up);
+		gpio_set_level(MOTOR_PIN_BW, packet.down);
+		gpio_set_level(MOTOR_PIN_LEFT, packet.left);
+		gpio_set_level(MOTOR_PIN_RIGHT, packet.right);
+	}
+	else{	
+		gpio_set_level(MOTOR_PIN_FW, packet.down);
+		gpio_set_level(MOTOR_PIN_BW, packet.up);
+		gpio_set_level(MOTOR_PIN_LEFT, packet.right);
+		gpio_set_level(MOTOR_PIN_RIGHT, packet.left);
+	}	
 }
+
 
 static void tag_queue_send_task(void *p) // sending rfid tag info to central tower
 {
@@ -76,30 +97,49 @@ static void tag_queue_send_task(void *p) // sending rfid tag info to central tow
 static void ctrl_queue_process_task(void *p)
 {
     controls_packet recv_packet;
+	rev = 0;
     ESP_LOGI("Car", "Listening_to_controls");
-    for(;;)
-    {
+    for(;;){
 		// ESP_LOGI("Car", "Trying to process controls packet");
-        if(xQueueReceive(ctrl_recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
-        {
-            print_packet(recv_packet);
+        if(xQueueReceive(ctrl_recv_q, &recv_packet, portMAX_DELAY) == pdTRUE) {
+			print_packet(recv_packet,rev);
+			if (mod_flag){
+				current_time = millis();
+				if (current_time - start_time >= 5000){
+					printf("Back to normal state\n");
+					//printf("start time %d current time %d", start_time, current_time);
+					brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, V0);
+					mod_flag = 0;
+					rev = 0;
+				}
+			}
+
 			// User click modifier button
 			if (recv_packet.mod == true){
+				printf("mod = 1\n");
 				modifier_packet* mod_pack = malloc(sizeof(modifier_packet));
-				if (xQueueReceive(mod_q, mod_pack, portMAX_DELAY) ==pdTRUE){
+				if (xQueueReceive(mod_q, mod_pack, 0) ==pdTRUE){
+					printf("have something in mod queue\n");
 					if (mod_pack->modifier == 0){
-						//power up
-						brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 100.0);
-	 					vTaskDelay(5000 / portTICK_RATE_MS);
-						brushed_motor_forward(MCPWM_UNIT_0, MCPWM_TIMER_0, 50.0);
+						start_time = millis();
+						//current_time = start_time;
+						printf("modifier: power up\n");
+						brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, VSPEED);
+						mod_flag = 1;
 					}
-					else{
+					else 
+					{
+						//printf("modifier: something else\n");
 						esp_err_t err;
-						const uint8_t DEST_MAC[MAC_LEN] = CAR2_MAC_ADDR;
-						if((err = esp_now_send(DEST_MAC, (uint8_t*)mod_pack, sizeof(modifier_packet))) != ESP_OK){
-							ESP_LOGE("Car", "Error sending packet to tower");
+						active_mod_packet * act_pack = malloc(sizeof(active_mod_packet));
+						act_pack->modifier = mod_pack->modifier;
+						printf("modifier: negative\n");
+						const uint8_t DEST_MAC[MAC_LEN] = CONTROLLER2_MAC_ADDR;
+						if((err = esp_now_send(DEST_MAC, (uint8_t*)act_pack, sizeof(active_mod_packet))) != ESP_OK){
+							ESP_LOGE("Car", "Error sending packet to different car");
 							printf("Error: %x\n", err);
 						}
+						free(act_pack);
 					}
 				}
 				else{
@@ -144,7 +184,29 @@ static void active_mod_queue_process_task(void *p)
         {
             // print_packet(recv_packet);
 			printf("Received Active modifier: %02x\n", active_packet.modifier);
-			
+			if (active_packet.modifier == 1){
+				start_time = millis();
+				//current_time = start_time;
+				printf("modifier: power down\n");
+				brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, VSLOW);
+				mod_flag = 1;
+			}
+
+			else if (active_packet.modifier == 2){
+				start_time = millis();
+				//current_time = start_time;
+				printf("modifier: reverse control\n");
+				rev = 1;
+				mod_flag = 1;
+			}
+						
+			else if (active_packet.modifier == 3){
+				start_time = millis()-2000;
+				//current_time = start_time;
+				printf("modifier: stop control\n");
+				brushed_motor_stop(MCPWM_UNIT_0, MCPWM_TIMER_0);
+				mod_flag = 1;
+			}
         }  
 		else{
 			taskYIELD();
@@ -156,7 +218,7 @@ static void active_mod_queue_process_task(void *p)
 
 void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
 
-	ESP_LOGI("Car", "%d bytes incoming from " MACSTR, len, MAC2STR(mac_addr));
+	//ESP_LOGI("Car", "%d bytes incoming from " MACSTR, len, MAC2STR(mac_addr));
 
 	if(len == sizeof(controls_packet)){
 		static controls_packet recv_packet;
@@ -227,13 +289,22 @@ static void initialize_esp_now_car(void){
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
+	
 	const esp_now_peer_info_t dest_peer2 = {
-		.peer_addr = CAR2_MAC_ADDR,
+		.peer_addr = CONTROLLER2_MAC_ADDR,
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
+
+	const esp_now_peer_info_t dest_peer3 = {
+		.peer_addr = CONTROLLER1,
+		.channel = 1,
+		.ifidx = ESP_IF_WIFI_STA
+	};
+
 	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer1));
 	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer2));
+	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer3));
 }
 
 void tag_handler(uint8_t* serial_no){
@@ -250,7 +321,7 @@ void tag_handler(uint8_t* serial_no){
 	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
 
 	tag_packet* packet = malloc(sizeof(tag_packet));
-	const uint8_t SRC_MAC[MAC_LEN] = CAR1_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
+	const uint8_t SRC_MAC[MAC_LEN] = CAR2_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
 	memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
 	memcpy(packet->tag_id, serial_no, TAG_LEN); // read data from tag reader module
 
@@ -261,31 +332,9 @@ void tag_handler(uint8_t* serial_no){
 	free(packet);
 }
 
-static void test_comm_task(void* p){
-	static uint8_t i = 0;
-	static tag_packet packet;
-	for(;;){
-		// tag_packet *packet = malloc(sizeof(tag_packet));
-		packet.tag_id[0] = i;
-		i++;
-		xQueueSend(tag_q, &packet, portMAX_DELAY);
-		vTaskDelay(35*portTICK_PERIOD_MS);
-	}
-}
-
-// void print_outputs(void* p){
-// 	// bool alternate = true;
-// 	for(;;){
-// 		printf("Pin 12: %d, Pin 13: %d, Pin 4: %d, Pin 5: %d\n", gpio_get_level(MOTOR_PIN_FW),  gpio_get_level(MOTOR_PIN_BW),  gpio_get_level(MOTOR_PIN_LEFT),  gpio_get_level(MOTOR_PIN_RIGHT));
-// 		// gpio_set_level(alternate ? MOTOR_PIN_BW : MOTOR_PIN_FW, 1);
-// 		// gpio_set_level(alternate ? MOTOR_PIN_FW : MOTOR_PIN_BW, 0);
-// 		// alternate = !alternate;
-// 		vTaskDelay(500 / portTICK_PERIOD_MS);
-// 	}
-// }
 
 void app_main(void) {
-
+	mod_flag =0;
 	const rc522_start_args_t start_args = {
 		.miso_io = 25,
 		.mosi_io = 23,
@@ -313,12 +362,15 @@ void app_main(void) {
 	active_mod_q = xQueueCreate(10, sizeof(active_mod_packet));
 
 	initialize_esp_now_car();
+	mcpwm_example_gpio_initialize();
+
 	//mcpwm_example_config(NULL);
 	xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
 	xTaskCreate(tag_queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
 	xTaskCreate(tower_queue_process_task, "Receive_from_controller", 2048, NULL, 3, NULL);
 	xTaskCreate(active_mod_queue_process_task, "Receive active modifier", 2048, NULL, 3, NULL);
 	//xTaskCreate(test_comm_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);
-	xTaskCreate(mcpwm_example_config, "mcpwm_example_config", 4096, NULL, 5, NULL);
+	//xTaskCreate(mcpwm_example_config, "mcpwm_example_config", 4096, NULL, 5, NULL);
 	// xTaskCreate(print_outputs, "Print_GPIO_outputs", 2048, NULL, 1, NULL);
+	//xTaskCreate(activate_mod, "activate_mod", 2048, NULL, 5, NULL);
 }

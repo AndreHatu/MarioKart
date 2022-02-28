@@ -16,7 +16,9 @@
 
 #include "../../config/mario_kart_config.h"
 
+#define CAR1 CAR1_MAC_ADDR
 #define CAR2 CAR2_MAC_ADDR
+
 //BIG BRDB:   3c:61:05:7d:e0:88
 //SMALL BRDB: 3c:61:05:7d:dd:a4
 
@@ -40,7 +42,7 @@ void package_data(controls_packet* packet){
 static void send_info(void* args){
 	controls_packet* packet = malloc(sizeof(controls_packet));
 	esp_err_t err;
-	const uint8_t DEST_MAC[] = CAR;
+	const uint8_t DEST_MAC[] = CAR2;
 	EventBits_t bits;
 	for(;;){
 		package_data(packet);

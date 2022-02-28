@@ -36,6 +36,7 @@ uint8_t random_modifier(){
 	//	2: reverse control
 	//	3: stop
 	return (uint8_t) (esp_random() % 4);
+	//return 0;
 }
 
 // assign random modifier based on tag or mark checkpoint
@@ -118,11 +119,11 @@ void tag_handler(tag_packet packet){
 	}
 
 
-	modifier_packet* send_packet = malloc(sizeof(modifier_packet));
-	send_packet->modifier = 0xff;
-	if(xQueueSend(modifier_q, send_packet, portMAX_DELAY) != pdTRUE){
-		ESP_LOGW("Tower", "Modifier Queue Full");
-	}
+	// modifier_packet* send_packet = malloc(sizeof(modifier_packet));
+	// send_packet->modifier = 0xff;
+	// if(xQueueSend(modifier_q, send_packet, portMAX_DELAY) != pdTRUE){
+	// 	ESP_LOGW("Tower", "Modifier Queue Full");
+	// }
 }
 
 //receive data from car (NFC tag information)
@@ -167,11 +168,11 @@ static void queue_send_task(void* args){
 	// const uint8_t DEST_MAC1[] = CAR1_MAC_ADDR;
 	// const uint8_t DEST_MAC2[] = CAR2_MAC_ADDR;
 	modifier_packet* packet = malloc(sizeof(modifier_packet));
-	uint8_t car1[MAC_LEN] = CAR1_MAC_ADDR;
+	uint8_t car[MAC_LEN] = CAR2_MAC_ADDR;
 	for(;;){
 		if (xQueueReceive(modifier_q, packet, portMAX_DELAY) == pdTRUE){
 			// NOTE: need to add some switching logic to figure out if we send packet to either car or both
-			if(esp_now_send(car1, (uint8_t*)packet, sizeof(modifier_packet)) != ESP_OK){
+			if(esp_now_send(car, (uint8_t*)packet, sizeof(modifier_packet)) != ESP_OK){
 				// if dest_mac is NULL, packet is broadcast to all peers
 				ESP_LOGE("Car", "Error sending packet to tower\n");
 			}
