@@ -1,11 +1,11 @@
 EESchema-LIBRARY Version 2.4
 #encoding utf-8
 #
-# ESP32-SOLO-1-ESP-SOLO-1
+# ESP32-SOLO-1-ESP-SOLO-1-controller-rescue
 #
-DEF ESP32-SOLO-1-ESP-SOLO-1 IC 0 30 Y Y 1 F N
+DEF ESP32-SOLO-1-ESP-SOLO-1-controller-rescue IC 0 30 Y Y 1 F N
 F0 "IC" 1250 300 50 H V L CNN
-F1 "ESP32-SOLO-1-ESP-SOLO-1" 1250 200 50 H V L CNN
+F1 "ESP32-SOLO-1-ESP-SOLO-1-controller-rescue" 1250 200 50 H V L CNN
 F2 "ESP32SOLO1" 1250 100 50 H I L CNN
 F3 "https://www.espressif.com/sites/default/files/documentation/esp32-solo-1_datasheet_en.pdf" 1250 0 50 H I L CNN
 F4 "WiFi Modules (802.11) SMD Module, ESP32-S0WD, 32Mbits SPI flash, UART mode," 1250 -100 50 H I L CNN "Description"

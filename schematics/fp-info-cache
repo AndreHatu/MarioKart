@@ -1,4 +1,4 @@
-19406280001247254
+19417802857703920
 Battery
 BatteryHolder_Bulgin_BX0036_1xC
 Bulgin Battery Holder, BX0036, Battery Type C (https://www.bulgin.com/products/pub/media/bulgin/data/Battery_holders.pdf)
@@ -58666,6 +58666,55 @@ Mounting 4.5mm 9774100982
 0
 8
 1
+Mouser
+2169900003
+216990-0003-1
+Connector
+0
+16
+16
+Mouser
+APHCM2012QBCDF01
+APHCM2012QBC/D-F01-3
+LED
+0
+2
+2
+Mouser
+AZ1117CD33TRG1
+TO252-2 (DPAK)_5
+Integrated Circuit
+0
+3
+3
+Mouser
+ESP32SOLO1
+ESP32-WROVER-I
+Integrated Circuit
+0
+39
+39
+Mouser
+NE555DR
+D (R-PDSO-G8)
+Integrated Circuit
+0
+8
+8
+Mouser
+SOD2513X120N
+SOD323
+Schottky Diode
+0
+2
+2
+Mouser
+SOT95P240X115-3N
+SOT-23_2
+Transistor BJT NPN
+0
+3
+3
 NetTie
 NetTie-2_SMD_Pad0.5mm
 Net tie, 2 pin, 0.5mm square SMD pads

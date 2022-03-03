@@ -1,0 +1,45 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP NE555DR
+D Single Precision Timer
+K
+F http://www.ti.com/lit/ds/symlink/ne555.pdf
+$ENDCMP
+#
+$CMP 216990-0003
+D USB Connectors Mid-Mnt SMT CH0.58 16Ckt Type C Rec.
+K
+F https://www.molex.com/pdm_docs/sd/2169900003_sd.pdf
+$ENDCMP
+#
+$CMP BAT760-7
+D Diode Schottky 30V 1A 2Pin SOD323 Diodes Inc BAT760-7, SMT Schottky Diode, 30V 1A, 2-Pin SOD-323
+K
+F https://www.diodes.com/assets/Datasheets/ds30498.pdf
+$ENDCMP
+#
+$CMP SS8050-G
+D Bipolar Transistors - BJT NPN TRANSISTOR 1.5A 40V
+K
+F https://datasheet.datasheetarchive.com/originals/distributors/DKDS-12/229454.pdf
+$ENDCMP
+#
+$CMP AZ1117CD-3.3TRG1
+D LDO Regulator Pos 3.3V 0.8A 3-Pin(2+Tab) TO-252 T/R
+K
+F https://www.diodes.com/assets/Datasheets/AZ1117C.pdf
+$ENDCMP
+#
+$CMP ESP32-SOLO-1
+D WiFi Modules (802.11) SMD Module, ESP32-S0WD, 32Mbits SPI flash, UART mode,
+K
+F https://www.espressif.com/sites/default/files/documentation/esp32-solo-1_datasheet_en.pdf
+$ENDCMP
+#
+$CMP APHCM2012QBC_D-F01
+D Standard LEDs - SMD Blue 465nm 100mcd, 20mA
+K
+F http://www.kingbrightusa.com/images/catalog/SPEC/APHCM2012QBC-D-F01.pdf
+$ENDCMP
+#
+#End Doc Library
