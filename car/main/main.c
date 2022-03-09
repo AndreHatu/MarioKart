@@ -131,13 +131,15 @@ static void ctrl_queue_process_task(void *p)
 					{
 						//printf("modifier: something else\n");
 
-						
+						active_mod_packet* act_pack = malloc(sizeof(active_mod_packet));
+						act_pack->modifier = mod_pack->modifier;
 						esp_err_t err;
 						const uint8_t DEST_MAC[MAC_LEN] = CAR2_MAC_ADDR;
-						if((err = esp_now_send(DEST_MAC, (uint8_t*)mod_pack, sizeof(modifier_packet))) != ESP_OK){
+						if((err = esp_now_send(DEST_MAC, (uint8_t*)act_pack, sizeof(active_mod_packet))) != ESP_OK){
 							ESP_LOGE("Car", "Error sending packet to tower");
 							printf("Error: %x\n", err);
 						}
+						free(act_pack);
 					}
 				}
 				else{
@@ -238,6 +240,7 @@ void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
 	}
 	else if (len == sizeof(active_mod_packet)){
 		static active_mod_packet recv_packet;
+		printf("recved activ mod: %02x\n", recv_packet.modifier);
 		memcpy(&recv_packet, data, len);
 		if (xQueueSend(active_mod_q, &recv_packet, 0) != pdTRUE) {
 			ESP_LOGW("Car", "Modifiers Queue full, discarded");
@@ -291,13 +294,13 @@ static void initialize_esp_now_car(void){
 	};
 	
 	const esp_now_peer_info_t dest_peer2 = {
-		.peer_addr = CAR2_MAC_ADDR,
+		.peer_addr = CAR2_MAC_ADDR, // another car
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
 
 	const esp_now_peer_info_t dest_peer3 = {
-		.peer_addr = CONTROLLER1,
+		.peer_addr = CONTROLLER1, // my controller
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
