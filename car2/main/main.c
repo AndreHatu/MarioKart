@@ -27,8 +27,9 @@
 
 // NOTE: change accordingly
 #define TOWER TOWER_MAC_ADDR
-#define CONTROLLER1 CAR1_MAC_ADDR
-#define CAR1	CONTROLLER2_MAC_ADDR
+#define CONTROLLER CAR1_MAC_ADDR
+#define ANOTHER_CAR	CONTROLLER2_MAC_ADDR
+#define MY_CAR CAR2_MAC_ADDR
 #define MOTOR_PIN_BW 12   // in3
 #define MOTOR_PIN_FW 13   // in4
 #define MOTOR_PIN_LEFT 2  // in2
@@ -116,7 +117,7 @@ static void ctrl_queue_process_task(void *p)
 			}
 
 			// User click modifier button
-			if (recv_packet.mod == true){
+			else if (recv_packet.mod == true){
 				printf("mod = 1\n");
 				modifier_packet* mod_pack = malloc(sizeof(modifier_packet));
 				if (xQueueReceive(mod_q, mod_pack, 0) ==pdTRUE){
@@ -135,7 +136,7 @@ static void ctrl_queue_process_task(void *p)
 						active_mod_packet * act_pack = malloc(sizeof(active_mod_packet));
 						act_pack->modifier = mod_pack->modifier;
 						printf("modifier: negative\n");
-						const uint8_t DEST_MAC[MAC_LEN] = CONTROLLER2_MAC_ADDR;
+						const uint8_t DEST_MAC[MAC_LEN] = ANOTHER_CAR;
 						if((err = esp_now_send(DEST_MAC, (uint8_t*)act_pack, sizeof(active_mod_packet))) != ESP_OK){
 							ESP_LOGE("Car", "Error sending packet to different car");
 							printf("Error: %x\n", err);
@@ -292,13 +293,13 @@ static void initialize_esp_now_car(void){
 	};
 	
 	const esp_now_peer_info_t dest_peer2 = {
-		.peer_addr = CAR1,
+		.peer_addr = ANOTHER_CAR,
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
 
 	const esp_now_peer_info_t dest_peer3 = {
-		.peer_addr = CONTROLLER1,
+		.peer_addr = CONTROLLER,
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
@@ -322,7 +323,7 @@ void tag_handler(uint8_t* serial_no){
 	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
 
 	tag_packet* packet = malloc(sizeof(tag_packet));
-	const uint8_t SRC_MAC[MAC_LEN] = CAR2_MAC_ADDR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
+	const uint8_t SRC_MAC[MAC_LEN] = MY_CAR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
 	memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
 	memcpy(packet->tag_id, serial_no, TAG_LEN); // read data from tag reader module
 
