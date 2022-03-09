@@ -12,7 +12,7 @@
 #define MCPWM_GPIO_INIT 0    //select which function to use to initialize gpio signals
 #define GPIO_PWM0A_OUT 15   //Set GPIO 15 as PWM0A
 #define GPIO_PWM0B_OUT 17  //Set GPIO 17 as PWM0B
-#define V0 65.0
+#define V0 80.0
 #define VSPEED 85.0
 #define VSLOW 45.0
 #define VFRONT 90.0
