@@ -142,6 +142,8 @@ static void ctrl_queue_process_task(void *p)
 							printf("Error: %x\n", err);
 						}
 						free(act_pack);
+						start_time = millis();
+						mod_flag = 1;
 					}
 				}
 				else{
