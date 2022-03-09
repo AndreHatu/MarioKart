@@ -20,7 +20,6 @@
 void brushed_motor_a(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num , float duty_cycle);
 void brushed_motor_b(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num , float duty_cycle);
 void brushed_motor_stop(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num);
-// void activate_mod(void);
 
 void mcpwm_example_gpio_initialize(void);
 void mcpwm_example_config(void * arg);

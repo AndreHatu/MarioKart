@@ -28,6 +28,7 @@
 // NOTE: change accordingly
 #define TOWER TOWER_MAC_ADDR
 #define CONTROLLER1 CAR1_MAC_ADDR
+#define CAR1	CONTROLLER2_MAC_ADDR
 #define MOTOR_PIN_BW 12   // in3
 #define MOTOR_PIN_FW 13   // in4
 #define MOTOR_PIN_LEFT 2  // in2
@@ -292,7 +293,11 @@ static void initialize_esp_now_car(void){
 	};
 	
 	const esp_now_peer_info_t dest_peer2 = {
+<<<<<<< Updated upstream
 		.peer_addr = CAR2_MAC_ADDR, // another car
+=======
+		.peer_addr = CAR1,
+>>>>>>> Stashed changes
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
