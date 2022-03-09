@@ -2337,7 +2337,7 @@
     (uuid 00000000-0000-0000-0000-00006209664c)
     (property "Reference" "IC1" (id 0) (at 187.96 36.449 0))
     (property "Value" "ESP32-SOLO-1" (id 1) (at 187.96 38.7604 0))
-    (property "Footprint" "Mouser:ESP32SOLO1" (id 2) (at 201.93 40.64 0)
+    (property "Footprint" "RF_Module:ESP32-WROOM-32" (id 2) (at 201.93 40.64 0)
       (effects (font (size 1.27 1.27)) (justify left) hide)
     )
     (property "Datasheet" "https://www.espressif.com/sites/default/files/documentation/esp32-solo-1_datasheet_en.pdf" (id 3) (at 201.93 43.18 0)
@@ -2465,7 +2465,7 @@
     (property "Value" "Conn_01x06" (id 1) (at 102.362 117.1702 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "Connector_PinSocket_1.00mm:PinSocket_1x06_P1.00mm_Vertical" (id 2) (at 95.25 118.11 0)
+    (property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x06_P2.54mm_Vertical" (id 2) (at 95.25 118.11 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (id 3) (at 95.25 118.11 0)
@@ -2679,7 +2679,7 @@
     (property "Value" "0" (id 1) (at 141.478 106.553 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "Resistor_SMD:R_0201_0603Metric" (id 2) (at 137.922 105.41 90)
+    (property "Footprint" "Resistor_SMD:R_0805_2012Metric" (id 2) (at 137.922 105.41 90)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (id 3) (at 139.7 105.41 0)
@@ -2694,7 +2694,7 @@
     (uuid 00000000-0000-0000-0000-0000621f3c14)
     (property "Reference" "R7" (id 0) (at 90.3478 66.04 90))
     (property "Value" "0" (id 1) (at 88.0364 66.04 90))
-    (property "Footprint" "Resistor_SMD:R_0201_0603Metric" (id 2) (at 86.868 66.04 90)
+    (property "Footprint" "Resistor_SMD:R_0805_2012Metric" (id 2) (at 86.868 66.04 90)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (id 3) (at 85.09 66.04 0)
@@ -2707,7 +2707,7 @@
   (symbol (lib_id "power:GND") (at 166.37 39.37 180) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 00000000-0000-0000-0000-0000622062dd)
-    (property "Reference" "#PWR?" (id 0) (at 166.37 33.02 0)
+    (property "Reference" "#PWR0101" (id 0) (at 166.37 33.02 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (id 1) (at 166.243 34.9758 0))
@@ -3223,7 +3223,7 @@
       (reference "#PWR014") (unit 1) (value "GND") (footprint "")
     )
     (path "/00000000-0000-0000-0000-0000622062dd"
-      (reference "#PWR?") (unit 1) (value "GND") (footprint "")
+      (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
     )
     (path "/00000000-0000-0000-0000-00006220cbe7"
       (reference "C1") (unit 1) (value "0.1uF") (footprint "Capacitor_SMD:C_0805_2012Metric")
@@ -3253,13 +3253,13 @@
       (reference "D2") (unit 1) (value "LED") (footprint "Mouser:APHCM2012QBCDF01")
     )
     (path "/00000000-0000-0000-0000-00006209664c"
-      (reference "IC1") (unit 1) (value "ESP32-SOLO-1") (footprint "Mouser:ESP32SOLO1")
+      (reference "IC1") (unit 1) (value "ESP32-SOLO-1") (footprint "RF_Module:ESP32-WROOM-32")
     )
     (path "/00000000-0000-0000-0000-0000622e8087"
       (reference "J1") (unit 1) (value "216990-0003") (footprint "Mouser:2169900003")
     )
     (path "/00000000-0000-0000-0000-0000621305fa"
-      (reference "J2") (unit 1) (value "Conn_01x06") (footprint "Connector_PinSocket_1.00mm:PinSocket_1x06_P1.00mm_Vertical")
+      (reference "J2") (unit 1) (value "Conn_01x06") (footprint "Connector_PinSocket_2.54mm:PinSocket_1x06_P2.54mm_Vertical")
     )
     (path "/00000000-0000-0000-0000-00006226446b"
       (reference "J3") (unit 1) (value "Conn_01x05") (footprint "Connector_PinSocket_2.54mm:PinSocket_1x05_P2.54mm_Vertical")
@@ -3292,10 +3292,10 @@
       (reference "R5") (unit 1) (value "10k") (footprint "Resistor_SMD:R_0805_2012Metric")
     )
     (path "/00000000-0000-0000-0000-0000621f10c3"
-      (reference "R6") (unit 1) (value "0") (footprint "Resistor_SMD:R_0201_0603Metric")
+      (reference "R6") (unit 1) (value "0") (footprint "Resistor_SMD:R_0805_2012Metric")
     )
     (path "/00000000-0000-0000-0000-0000621f3c14"
-      (reference "R7") (unit 1) (value "0") (footprint "Resistor_SMD:R_0201_0603Metric")
+      (reference "R7") (unit 1) (value "0") (footprint "Resistor_SMD:R_0805_2012Metric")
     )
     (path "/00000000-0000-0000-0000-00006220c472"
       (reference "SW1") (unit 1) (value "SW_Push") (footprint "Button_Switch_SMD:SW_SPST_CK_KXT3")

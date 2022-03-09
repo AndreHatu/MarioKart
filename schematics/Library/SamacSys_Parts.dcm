@@ -42,4 +42,10 @@ K
 F http://www.kingbrightusa.com/images/catalog/SPEC/APHCM2012QBC-D-F01.pdf
 $ENDCMP
 #
+$CMP AZ1117IH-3.3TRG1
+D LDO Voltage Regulators LDO BJT HiCurr 1.35A 10Hz to 10KHz
+K
+F 
+$ENDCMP
+#
 #End Doc Library

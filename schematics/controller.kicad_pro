@@ -49,7 +49,10 @@
         }
       },
       "diff_pair_dimensions": [],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        "silk_over_copper|121130001|54610000|4aa97874-2fd2-414c-b381-9420384c2fd8|75ffc65c-7132-4411-9f2a-ae0c73d79338",
+        "silk_over_copper|139130001|54610000|4aa97874-2fd2-414c-b381-9420384c2fd8|8c6a821f-8e19-48f3-8f44-9b340f7689bc"
+      ],
       "meta": {
         "filename": "board_design_settings.json",
         "version": 2

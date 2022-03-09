@@ -48,8 +48,17 @@
           "min_clearance": 0.508
         }
       },
-      "diff_pair_dimensions": [],
-      "drc_exclusions": [],
+      "diff_pair_dimensions": [
+        {
+          "gap": 0.0,
+          "via_gap": 0.0,
+          "width": 0.0
+        }
+      ],
+      "drc_exclusions": [
+        "silk_over_copper|145080000|56134000|b13e8448-bf35-4ec0-9c70-3f2250718cc2|453b543d-7953-43b0-a58b-8d9a186c7078",
+        "silk_over_copper|163320000|56134000|b13e8448-bf35-4ec0-9c70-3f2250718cc2|6b91de3d-afd3-4844-b78a-f4726dde8bd3"
+      ],
       "meta": {
         "filename": "board_design_settings.json",
         "version": 2
@@ -113,8 +122,16 @@
         "min_via_diameter": 0.39999999999999997,
         "use_height_for_length_calcs": true
       },
-      "track_widths": [],
-      "via_dimensions": [],
+      "track_widths": [
+        0.0,
+        0.0254
+      ],
+      "via_dimensions": [
+        {
+          "diameter": 0.0,
+          "drill": 0.0
+        }
+      ],
       "zones_allow_external_fillets": false,
       "zones_use_no_outline": true
     },

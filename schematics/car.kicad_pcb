@@ -2263,11 +2263,8 @@
   (gr_line (start 65.024 50.1904) (end 121.4628 49.9872) (layer "Edge.Cuts") (width 0.1) (tstamp 7dff0a7f-556e-41c4-a1f8-c1ec48cc50f5))
   (gr_line (start 123.7488 49.9872) (end 123.2408 111.6076) (layer "Edge.Cuts") (width 0.1) (tstamp 9846c4e0-1a67-47d4-bdcc-4212aa1974e6))
   (gr_line (start 53.34 50.3936) (end 65.024 50.1904) (layer "Edge.Cuts") (width 0.1) (tstamp f0ed1f82-f056-4e8a-bbda-7f58efca5073))
-  (gr_text "Andre Hatushikano\nDa Yeon Nam\nJake Doan\nJorge Apolo" (at 63.9064 104.14) (layer "F.SilkS") (tstamp 79adb8ef-9068-4fa7-a773-40b4de19ed87)
-    (effects (font (size 1 1) (thickness 0.15)))
-  )
-  (gr_text "Mario Kart\nECE 477 \nTeam 6\nCar PCB\n" (at 92.456 107.5944) (layer "F.SilkS") (tstamp dbef8590-ba83-439b-b763-9d0a2b22d17e)
-    (effects (font (size 1 1) (thickness 0.15)))
+  (gr_text "Purdue University \nECE 477: Senior Design \nGroup 6: Mario Kart\n3/1/2022\n\nCar PCB\nVersion:   1.0\nAuthors:   Andre Hatushikano \n           Da Yeon Nam\n           Jake Doan\n           Jorge Apolo" (at 54.61 100.965) (layer "F.SilkS") (tstamp dbef8590-ba83-439b-b763-9d0a2b22d17e)
+    (effects (font (size 1 1) (thickness 0.15)) (justify left))
   )
 
   (segment (start 85.9324 80.1624) (end 87.7316 80.1624) (width 0.25) (layer "F.Cu") (net 1) (tstamp 01e2361c-8cef-4c66-ba86-15d354cfdd06))
