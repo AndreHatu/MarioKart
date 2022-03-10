@@ -14,7 +14,8 @@
 #define WHITE   0xffffffUL
 #define BLACK   0x000000UL
 
-
-void make_menu();
+void display_init();
+void display_test();
+void display_menu();
 
 #endif
