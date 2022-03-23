@@ -291,5 +291,8 @@ void app_main(void) {
 
 	display_init();
 	// display_menu();
-	display_test();
+	// display_test();
+	// display_button(WHITE);
+	xTaskCreate(touch_task, "handle_touches", 2048, NULL, 2, NULL);
+
 }

@@ -5,6 +5,7 @@
 uint32_t num_dl_static; /* amount of bytes in the static part of our display-list */
 uint8_t tft_active = 0;
 uint16_t num_profile_a, num_profile_b;
+uint16_t display_list_size = 0;
 
 void reverse(char str[], int length)
 {
@@ -68,6 +69,9 @@ void display_init(){
     EVE_init_spi();
     EVE_init();
     EVE_init_dma();
+
+    // EVE_cmd_inflate(MEM_LOGO, logo1, sizeof(logo1)); /* load logo into gfx-memory and de-compress it */
+    // EVE_cmd_loadimage(MEM_PIC1, EVE_OPT_NODL, pic1, sizeof(pic1));
 }
 
 void display_menu(){
@@ -125,19 +129,60 @@ void display_menu(){
     while (EVE_busy()) {};
 }
 
-void display_counter(int i, char* buffer){
-    EVE_cmd_dl(CMD_DLSTART); // tells EVE to start a new display-list
-    EVE_cmd_dl(DL_CLEAR_RGB | PINK); // sets the background color
-    EVE_cmd_dl(DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG);
-    // EVE_color_rgb(10000);
-    // buffer = itoa(i, buffer, 10);
-    // EVE_cmd_text(EVE_HSIZE/2, 50, 28, EVE_OPT_CENTER, buffer);
+void display_button(uint64_t bg_color, int16_t x0, int16_t y0, int16_t w0, int16_t h0, int16_t font){
+    uint16_t cmd_fifo_size;
+    cmd_fifo_size = EVE_dma_buffer_index*4; /* without DMA there is no way to tell how many bytes are written to the cmd-fifo */
+    EVE_start_cmd_burst(); /* start writing to the cmd-fifo as one stream of bytes, only sending the address once */
+    EVE_cmd_dl_burst(CMD_DLSTART); /* start the display list */
+    EVE_cmd_dl_burst(DL_CLEAR_RGB | bg_color); /* set the default clear color to white */
+    EVE_cmd_dl_burst(DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG); /* clear the screen - this and the previous prevent artifacts between lists, Attributes are the color, stencil and tag buffers */
+    EVE_cmd_dl_burst(TAG(0));
 
-    // EVE_cmd_dl(DL_COLOR_RGB | 0x0000ff);
-    // EVE_cmd_dl(POINT_SIZE(20*16));
-    // EVE_cmd_dl((DL_BEGIN | EVE_POINTS));
-    // EVE_cmd_dl(VERTEX2F((16*i)%7300, (16*i)%7300));
-    EVE_cmd_dl(DL_END);
+    EVE_cmd_append_burst(MEM_DL_STATIC, num_dl_static); /* insert static part of display-list from copy in gfx-mem */
+    /* display a button */
+    EVE_cmd_dl_burst(DL_COLOR_RGB | WHITE);
+    EVE_cmd_fgcolor_burst(0x00c0c0c0); /* some grey */
+    EVE_cmd_dl_burst(TAG(10)); /* assign tag-value '10' to the button that follows */
+    EVE_cmd_button_burst(x0, y0, w0, h0, font, 0,"Touch!");
+    EVE_cmd_dl_burst(TAG(0)); /* no touch */
+
+    // EVE_cmd_setbitmap_burst(MEM_PIC1, EVE_RGB565, 100, 100);
+
+    #if defined (EVE_DMA)
+    EVE_cmd_number_burst(100, EVE_VSIZE - 65, 26, EVE_OPT_RIGHTX, cmd_fifo_size); /* number of bytes written to the cmd-fifo */
+    #endif
+    EVE_cmd_number_burst(100, EVE_VSIZE - 50, 26, EVE_OPT_RIGHTX, display_list_size); /* number of bytes written to the display-list by the command co-pro */
+    EVE_cmd_number_burst(100, EVE_VSIZE - 35, 26, EVE_OPT_RIGHTX|4, num_profile_a); /* duration in us of TFT_loop() for the touch-event part */
+    EVE_cmd_number_burst(100, EVE_VSIZE - 20, 26, EVE_OPT_RIGHTX|4, num_profile_b); /* duration in us of TFT_loop() for the display-list part */
+
+    EVE_cmd_dl_burst(DL_DISPLAY); /* instruct the co-processor to show the list */
+    EVE_cmd_dl_burst(CMD_SWAP); /* make this list active */
+
+    EVE_end_cmd_burst();
+
+}
+
+void touch_task(void* args){
+    uint8_t counter = 0;
+    display_button(WHITE, 20, 20, 80, 30, 28);
+    for(;;){
+        while(EVE_busy());
+        uint8_t tag = EVE_memRead8(REG_TOUCH_TAG); // how to read touched tag
+        if(tag==10){
+            printf("Touched!\n");
+            switch(counter){
+                case 0: display_button(GREEN, 100, 100, 30, 30, 28); counter = 1; break;
+                case 1: display_button(BLUE, 200, 200, 40, 40, 30); counter = 2; break;
+                case 2: display_button(BLACK, 300, 300, 52, 35, 30);  counter = 3; break;
+                case 3: display_button(YELLOW, 400, 400, 64, 35, 30); counter = 4; break;
+                case 4: display_button(RED, 700, 400, 70, 30, 30); counter = 0; break;
+                default: display_button(WHITE, 20, 20, 80, 30, 28); counter = 0; break;
+            }
+        }
+        vTaskDelay(200/portTICK_PERIOD_MS);
+    }
+
+
 }
 
 void display_green(){
@@ -145,6 +190,8 @@ void display_green(){
     EVE_cmd_dl(DL_CLEAR_RGB | GREEN); // sets the background color
     EVE_cmd_dl(DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG);
     EVE_cmd_dl(DL_END);
+    // EVE_cmd_dl(DL_DISPLAY); // put in the display list to mark its end
+    // EVE_cmd_dl(CMD_SWAP); // tell EVE to use the new display list
 }
 
 void display_blue(){
@@ -152,11 +199,20 @@ void display_blue(){
     EVE_cmd_dl(DL_CLEAR_RGB | BLUE); // sets the background color
     EVE_cmd_dl(DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG);
     EVE_cmd_dl(DL_END);
+    // EVE_cmd_dl(DL_DISPLAY); // put in the display list to mark its end
+    // EVE_cmd_dl(CMD_SWAP); // tell EVE to use the new display list}
 }
 
 void display_black(){
     EVE_cmd_dl(CMD_DLSTART); // tells EVE to start a new display-list
     EVE_cmd_dl(DL_CLEAR_RGB | BLACK); // sets the background color
+    EVE_cmd_dl(DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG);
+    EVE_cmd_dl(DL_END);
+}
+
+void display_white(){
+    EVE_cmd_dl(CMD_DLSTART); // tells EVE to start a new display-list
+    EVE_cmd_dl(DL_CLEAR_RGB | WHITE); // sets the background color
     EVE_cmd_dl(DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG);
     EVE_cmd_dl(DL_END);
 }
@@ -168,9 +224,9 @@ void display_test(){
     char* buffer = malloc(sizeof(char) * 15);
     prev_touchX = 1023;
     prev_touchY = 1023;
-    uint32_t posX, posY;
-    posX = 0;
-    posY = 0;
+    // uint32_t posX, posY;
+    // posX = 0;
+    // posY = 0;
 	for(;;){
         if(prev_touchY < 50){
             display_black();
@@ -182,7 +238,7 @@ void display_test(){
             display_blue();
         }
         else if (prev_touchY > 50){
-            display_counter(i, buffer);
+            display_button(WHITE, 20, 20, 20, 20, 20);
         }
         else{
             display_black();
@@ -196,8 +252,8 @@ void display_test(){
         EVE_cmd_dl(DL_COLOR_RGB | 0x0000ff);
         EVE_cmd_dl(POINT_SIZE(20*16));
         EVE_cmd_dl((DL_BEGIN | EVE_POINTS));
-        posX = (16*i)%7300;
-        posY = posX;
+        // posX = (16*i)%7300;
+        // posY = posX;
         EVE_cmd_dl(VERTEX2F((16*i)%7300, (16*i)%7300));
 		// printf("Count: %d\n", i);
 		i++;
