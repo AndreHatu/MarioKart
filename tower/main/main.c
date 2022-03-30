@@ -17,7 +17,7 @@
 #include "strmap.h"
 
 #include "../../config/mario_kart_config.h"
-#include "EVE.h"
+//#include "EVE.h"
 
 static xQueueHandle recv_q;
 static xQueueHandle modifier_q;
