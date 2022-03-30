@@ -17,7 +17,7 @@
 #include "strmap.h"
 
 #include "../../config/mario_kart_config.h"
-//#include "EVE.h"
+#include "display.h"
 
 static xQueueHandle recv_q;
 static xQueueHandle modifier_q;
@@ -288,4 +288,11 @@ void app_main(void) {
 	initialize_hash();
 	xTaskCreate(queue_process_task, "Receive_from_car", 2048, NULL, 2, NULL);
 	xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 2, NULL);
+
+	display_init();
+	// display_menu();
+	// display_test();
+	// display_button(WHITE);
+	xTaskCreate(touch_task, "handle_touches", 2048, NULL, 2, NULL);
+
 }
