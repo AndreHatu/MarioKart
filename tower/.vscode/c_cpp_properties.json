@@ -27,7 +27,7 @@
                 ],
                 "limitSymbolsToIncludedHeaders": false
             },
-            "compilerPath": "xtensa-esp32-elf-gcc",
+            "compilerPath": "C:\\Users\\gram\\.espressif\\tools\\xtensa-esp32-elf\\esp-2021r2-patch2-8.4.0\\xtensa-esp32-elf\\bin\\xtensa-esp32-elf-gcc.exe",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "compileCommands": "${workspaceFolder}/build/compile_commands.json"

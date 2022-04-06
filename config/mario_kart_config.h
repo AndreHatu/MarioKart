@@ -68,5 +68,10 @@ typedef struct __attribute__((packed)) {
 	uint8_t modifier;
 } active_mod_packet;
 
+typedef struct __attribute__((packed)) {
+	int64_t time_now;
+	int8_t user_num;
+	int8_t lap_num;
+} Start_pack;
 
 #endif

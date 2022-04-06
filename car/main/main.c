@@ -338,6 +338,8 @@ void tag_handler(uint8_t* serial_no){
 }
 
 
+
+
 void app_main(void) {
 	mod_flag =0;
 	const rc522_start_args_t start_args = {
