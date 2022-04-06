@@ -17,7 +17,7 @@
 #include "../../config/mario_kart_config.h"
 
 
-#define MY_CAR CONTROLLER2_MAC_ADDR
+#define MY_CAR CAR1_MAC_ADDR
 
 //BIG BRDB:   3c:61:05:7d:e0:88
 //SMALL BRDB: 3c:61:05:7d:dd:a4
