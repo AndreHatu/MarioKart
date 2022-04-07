@@ -22,12 +22,31 @@
 static xQueueHandle recv_q;
 static xQueueHandle modifier_q;
 
+bool start_game;
 //hash map Definition for tag information
 StrMap *sm; 	 // address of the start point of the string map
 char value[4]; // buffer to copy the value of a certain key
+int current_time;
+int start_time;
 
 Car_Status Car1_status = { .checkpoint = 0, .lap_time = 0 };
 Car_Status Car2_status = { .checkpoint = 0, .lap_time = 0 };
+
+Start_pack Start_information = { .time_now = 0, .user_num = 0, .lap_num = 0 };
+
+int64_t millis() {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
+}
+
+
+void set_start_time(int8_t user, int8_t lap){
+	start_time = millis();
+	Start_information.time_now = start_time;
+    Start_information.lap_num = lap;
+	Start_information.user_num = user;
+}
 
 
 uint8_t random_modifier(){
@@ -130,6 +149,9 @@ void tag_handler(tag_packet packet){
 //receive data from car (NFC tag information)
 static void queue_process_task(void *p)
 {
+	if (!start_game){
+		return;
+	}
     tag_packet* recv_packet = malloc(sizeof(tag_packet));
 
     ESP_LOGI("Tower", "Listening");
@@ -147,6 +169,9 @@ static void queue_process_task(void *p)
 }
 
 void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
+	if (!start_game){
+		return;
+	}
 	static tag_packet recv_packet;
 
 	ESP_LOGI("Tower", "%d bytes incoming from " MACSTR, len, MAC2STR(mac_addr));
@@ -244,7 +269,7 @@ static void initialize_esp_now_tower(void){
 }
 
 void initialize_hash(){
-
+	start_game = false;
 	sm = sm_new(10);
 	if (sm == NULL){
 		printf("string map not created \n");
@@ -286,13 +311,13 @@ void app_main(void) {
 
 	//setup the hash map
 	initialize_hash();
-	xTaskCreate(queue_process_task, "Receive_from_car", 2048, NULL, 2, NULL);
-	xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 2, NULL);
+	// xTaskCreate(queue_process_task, "Receive_from_car", 2048, NULL, 2, NULL);
+	// xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 2, NULL);
 
 	display_init();
-	// display_menu();
-	// display_test();
-	// display_button(WHITE);
-	xTaskCreate(touch_task, "handle_touches", 2048, NULL, 2, NULL);
-
+	//display_menu();
+	//display_test();
+	//display_button(WHITE);
+	//xTaskCreate(touch_task, "handle_touches", 2048, NULL, 2, NULL);
+	xTaskCreate(task_menu, "handle_touches", 2048, NULL, 2, NULL);
 }

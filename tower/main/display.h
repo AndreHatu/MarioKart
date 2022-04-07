@@ -85,8 +85,10 @@
 //    0x0C, 0x7F, 0xFF, 0xD9,
 // };
 
+void set_start_time(int8_t user, int8_t lap);
 void display_init();
 void display_button(uint64_t bg_color, int16_t x0, int16_t y0, int16_t w0, int16_t h0, int16_t font);
+void menu_display(uint64_t bg_color, int16_t x0, int16_t y0, int16_t w0, int16_t h0, int16_t font);
 void display_counter();
 void display_test();
 void display_menu();
@@ -94,6 +96,8 @@ void display_green();
 void display_black();
 void display_blue();
 void display_white();
+void display_test2();
 void touch_task(void* args);
+void task_menu(void* args);
 
 #endif

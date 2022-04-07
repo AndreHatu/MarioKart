@@ -104,6 +104,7 @@ static void initialize_esp_now_controller(void){
 
 void app_main(void) {
 	
+	
 	gpio_config_t io_conf;
 	io_conf.intr_type = GPIO_INTR_DISABLE;//GPIO_INTR_POSEDGE;
 	io_conf.pin_bit_mask = GPIO_INPUT_PIN_SELECT;
