@@ -29,7 +29,7 @@
 #define TOWER TOWER_MAC_ADDR
 #define CONTROLLER CONTROLLER1_MAC_ADDR
 #define ANOTHER_CAR	CAR2_MAC_ADDR
-#define MY_CAR CONTROLLER2_MAC_ADDR
+#define MY_CAR CAR1_MAC_ADDR
 #define MOTOR_PIN_BW 12   // in3
 #define MOTOR_PIN_FW 13   // in4
 #define MOTOR_PIN_LEFT 2  // in2
@@ -54,11 +54,11 @@ int64_t millis() {
 }
 
 void print_packet(controls_packet packet, bool rev){
-	// printf(packet.left ? "left |" : "     |");
-	// printf(packet.right ? "right |" : "      |");
-	// printf(packet.up ? "up |" : "   |");
-	// printf(packet.down ? "down \n" : "     \n");
-	// printf(packet.mod ? "mod \n" : "     \n");
+	printf(packet.left ? "left |" : "     |");
+	printf(packet.right ? "right |" : "      |");
+	printf(packet.up ? "up |" : "   |");
+	printf(packet.down ? "down \n" : "     \n");
+	printf(packet.mod ? "mod \n" : "     \n");
 	if (!rev){
 		gpio_set_level(MOTOR_PIN_FW, packet.up);
 		gpio_set_level(MOTOR_PIN_BW, packet.down);
@@ -320,7 +320,7 @@ void tag_handler(uint8_t* serial_no){
 	printf("\n");
 	gpio_set_level(5, 0);
 
-	//time when car run voer tag
+	//time when car run over tag
 	struct timeval tv_now;
 	gettimeofday(&tv_now, NULL);
 	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
@@ -371,10 +371,9 @@ void app_main(void) {
 	initialize_esp_now_car();
 	mcpwm_example_gpio_initialize();
 
-	//mcpwm_example_config(NULL);
 	xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
 	xTaskCreate(tag_queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
-	xTaskCreate(tower_queue_process_task, "Receive_from_controller", 2048, NULL, 3, NULL);
+	xTaskCreate(tower_queue_process_task, "Receive_from_tower", 2048, NULL, 3, NULL);
 	xTaskCreate(active_mod_queue_process_task, "Receive active modifier", 2048, NULL, 3, NULL);
 	//xTaskCreate(test_comm_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);
 	//xTaskCreate(mcpwm_example_config, "mcpwm_example_config", 4096, NULL, 5, NULL);

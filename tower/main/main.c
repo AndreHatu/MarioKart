@@ -66,6 +66,7 @@ void tag_handler(tag_packet packet){
 	
 	//Figure out which car sent the tag packet (to update car status)
 	Car_Status my_car;
+	//uint8_t car1[MAC_LEN] = CAR1_MAC_ADDR;
 	uint8_t car1[MAC_LEN] = CAR1_MAC_ADDR;
 	uint8_t car2[MAC_LEN] = CAR2_MAC_ADDR;
 	uint8_t other_car[MAC_LEN];
@@ -150,7 +151,7 @@ void tag_handler(tag_packet packet){
 static void queue_process_task(void *p)
 {
 	if (!start_game){
-		return;
+		taskYIELD();
 	}
     tag_packet* recv_packet = malloc(sizeof(tag_packet));
 
@@ -270,12 +271,12 @@ static void initialize_esp_now_tower(void){
 
 void initialize_hash(){
 	start_game = false;
-	sm = sm_new(10);
+	sm = sm_new(51);
 	if (sm == NULL){
 		printf("string map not created \n");
 	}
 	//save checkpoint
-	// uint8_t id [TAG_LEN] = {0x72, 0xb5, 0x18, 0x1b, 0xc4};
+	// uint8_t id [TAG_LEN] = {0x88, 0x4, 0x36, 0x72, 0xc8};
 	// for (int i = 0; i < TAG_LEN; i++){
 	// 	if (id[i] > 0x7f){
 	// 		id[i] %= 0x7f;
@@ -288,20 +289,70 @@ void initialize_hash(){
     // memcpy(str, id, TAG_LEN);
 	// str[TAG_LEN] = '\0';
 	// printf("add tag: %s \n", str);
-	printf("%s", "r68;E\0");
+	//printf("%s", "r68;E\0\n");
 	//sm_put(sm, "r68;E", "C0");
 	// sm_put(sm, "1", "C1");
 	// sm_put(sm, "2", "C2");
 	// sm_put(sm, "3", "C3");
 	// sm_put(sm, "4", "C4");
-	// //save modifier
-	sm_put(sm, "r68;E", "M");
-	// sm_put(sm, "6", "M");
-	// sm_put(sm, "7", "M");
-	// sm_put(sm, "8", "M");
-	// sm_put(sm, "9", "M");
-}
 
+	//save modifier
+	sm_put(sm, "r68;E", "M");
+	
+    // sm_put(sm, ")$h^", "M");
+	// sm_put(sm, ")$0yd", "M");
+	// sm_put(sm, ")$&V", "M");
+	// sm_put(sm, ")$ >3", "M");
+	// sm_put(sm, ")$1(6", "M");
+	// sm_put(sm, ")$Y,X", "M");
+	// sm_put(sm, ")$G'M", "M");
+	// sm_put(sm, ")$a:V", "M");
+	// sm_put(sm, ")$6|e", "M");
+	// sm_put(sm, ")$%%rZ", "M");
+
+	// sm_put(sm, ")$=N\\", "M");
+	// sm_put(sm, ")$8lY", "M");
+	// sm_put(sm, ")$/$", "M");
+	// sm_put(sm, ")$x;P", "M");
+	// sm_put(sm, ")$ 8+", "M");
+	// sm_put(sm, ")$Jm(", "M");
+	// sm_put(sm, ")$C/A", "M");
+	// sm_put(sm, ")$+Vt", "M");
+	// sm_put(sm, ")$c,d", "M");
+	// sm_put(sm, ")$=l^", "M");
+	
+	// sm_put(sm, ")$>`Q", "M");
+	// sm_put(sm, ")$w \\", "M");
+	// sm_put(sm, ")$?8*", "M");
+	// sm_put(sm, ")$6>%%", "M");
+	// sm_put(sm, ")$#Q", "M");
+	// sm_put(sm, ")$I5Q", "M");
+	// sm_put(sm, ")$4^e", "M");
+	// sm_put(sm, ")$c*h", "M");
+	// sm_put(sm, ")$V0w ", "M");
+
+	// sm_put(sm, ")$y(R", "M");
+	// sm_put(sm, ")$&83", "M");
+	// sm_put(sm, ")$|""Q", "M");
+	// sm_put(sm, ")$Lb#", "M");
+	// sm_put(sm, ")$28+", "M");
+	// sm_put(sm, ")$93'", "M");
+	// sm_put(sm, ")$>2#", "M");
+	// sm_put(sm, ")$zW""", "M");
+	// sm_put(sm, ")$OZ", "M");
+	// sm_put(sm, ")$=*8", "M");
+	
+	// sm_put(sm, ")$&KD", "M");
+	// sm_put(sm, ")$<du", "M");
+	// sm_put(sm, ")$d/h", "M");
+	// sm_put(sm, ")$>,=", "M");
+	// sm_put(sm, ")$v-t", "M");
+	// sm_put(sm, ")$Pl1", "M");
+	// sm_put(sm, ")$7+1", "M");
+	// sm_put(sm, ")$<~m", "M");
+	// sm_put(sm, ")$u2h", "M");
+	// sm_put(sm, ")$6rI", "M");
+}
 
 void app_main(void) {
 	ESP_LOGI("Tower", "In main");
@@ -311,8 +362,8 @@ void app_main(void) {
 
 	//setup the hash map
 	initialize_hash();
-	// xTaskCreate(queue_process_task, "Receive_from_car", 2048, NULL, 2, NULL);
-	// xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 2, NULL);
+	//xTaskCreate(queue_process_task, "Receive_from_car", 2048, NULL, 2, NULL);
+	//xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 2, NULL);
 
 	display_init();
 	//display_menu();
