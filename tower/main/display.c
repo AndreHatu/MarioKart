@@ -244,22 +244,22 @@ void race_display(){
     EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE,LAYOUT_Y1-2));
     EVE_cmd_dl_burst(DL_END);
 
-    EVE_cmd_dl_burst(TAG(11));
-    EVE_cmd_button_burst(20, 15, 150, 40, 30, 0, "Back");
-    EVE_cmd_dl_burst(TAG(0));
-
     EVE_cmd_text_burst(EVE_HSIZE/2, 15, 30, EVE_OPT_CENTERX, "Mario Kart!");
+
+   
        
     // set line color to black
     EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
     EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
-    EVE_cmd_dl_burst(VERTEX2F(0, divider+50));
-    EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, divider+50));
+    EVE_cmd_dl_burst(VERTEX2F(0, LAYOUT_Y1+50));
+    EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, LAYOUT_Y1+50));
     EVE_cmd_dl_burst(DL_END);
-    EVE_cmd_text_burst(0, divider, 30, 0, "Player");
-    EVE_cmd_text_burst(100, divider, 30, 0, "Laps");
-    EVE_cmd_text_burst(170, divider, 30, 0, "Last lap time");
-    while(EVE_busy());
+
+
+    EVE_cmd_text_burst(0, LAYOUT_Y1, 30, 0, "Player");
+    EVE_cmd_text_burst(100, LAYOUT_Y1, 30, 0, "Laps");
+    EVE_cmd_text_burst(170, LAYOUT_Y1, 30, 0, "Last lap time");
+   // while(EVE_busy()) {};
 
     for(int i = 0; i < userNum; i++){
         divider += 50;
@@ -275,14 +275,10 @@ void race_display(){
         EVE_cmd_text_burst(170, divider, 30, 0, "xx:xx:xx");
 
     }
-    // EVE_cmd_text_burst(680, EVE_VSIZE/2-80, 30, EVE_OPT_CENTERX, "Start Game?");
-    // EVE_cmd_text_burst(200, 100, 30, EVE_OPT_CENTERX, "User Number:");
-    // EVE_cmd_text_burst(200, 200, 30, EVE_OPT_CENTERX, "Lap Number:");
-    
-    // itoa(userNum, &number, 10);
-    // EVE_cmd_text_burst(200, 150, 30, EVE_OPT_CENTERX, number);
-    // itoa(lapNum, &number, 10);
-    // EVE_cmd_text_burst(200, 250, 30, EVE_OPT_CENTERX, number);
+    EVE_cmd_dl_burst(TAG(11));
+    EVE_cmd_button_burst(20, 15, 150, 40, 30, 0, "Back");
+    EVE_cmd_dl_burst(TAG(0));
+
 
     while (EVE_busy()) {};
 
@@ -291,7 +287,7 @@ void race_display(){
     EVE_cmd_memcpy(MEM_DL_STATIC, EVE_RAM_DL, num_dl_static);
     EVE_cmd_dl_burst(DL_DISPLAY); /* instruct the co-processor to show the list */
     EVE_cmd_dl_burst(CMD_SWAP); /* make this list active */
-    while(EVE_busy());
+    while(EVE_busy()) {};
 
     EVE_end_cmd_burst();
 }
@@ -307,9 +303,9 @@ void task_menu(void* args){
         while(EVE_busy());
         tag = EVE_memRead8(REG_TOUCH_TAG); // how to read touched tag
         // vTaskSuspendAll();  // prevent context switching when sending commands to display
-        if(!game_active){  // race creation menu
+        //if(!game_active){  // race creation menu
             if (tag != 0){
-                printf("tag value:%d\n", tag);
+                printf("tag value:%d game active %d\n", tag, game_active);
                 switch(tag){
                     case 1:
                         userNum += 1;
@@ -331,29 +327,26 @@ void task_menu(void* args){
                         }
                         game_active = true;
                         break;
+                    case 11:// cancel race
+                        game_active = false;
+                        menu_display();
+                        break;
                     default: 
                         break;
                 }
+                
+            }
+            if (!game_active){
+
                 userNum = userNum > 4 ? 4 : userNum < 1 ? 1 : userNum;
                 lapNum = lapNum > 10 ? 10 : lapNum < 1 ? 1 : lapNum;
+                menu_display();
             }
-            menu_display();
-        }
-        else{  // race active
-            // if(tag != 0){
-            //     printf("tag value:%d\n", tag);
-            //     switch(tag){
-            //         case 11:// cancel race
-            //             break;
-            //         default:
-            //             break;
-            //     }
-            // }
-            race_display();
-        }
- 
-        // xTaskResumeAll();
-        vTaskDelay(100/portTICK_PERIOD_MS);
+            else{
+                race_display();
+            }
+
+        vTaskDelay(150/portTICK_PERIOD_MS);
     }
 
 
