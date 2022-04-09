@@ -141,17 +141,20 @@ void menu_display(){
     uint16_t cmd_fifo_size;
     cmd_fifo_size = EVE_dma_buffer_index*4; /* without DMA there is no way to tell how many bytes are written to the cmd-fifo */
     EVE_start_cmd_burst(); /* start writing to the cmd-fifo as one stream of bytes, only sending the address once */
+    
     EVE_cmd_dl_burst(CMD_DLSTART); /* start the display list */
     EVE_cmd_dl_burst(DL_CLEAR_RGB | WHITE); /* set the default clear color to white */
     EVE_cmd_dl_burst(DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG); /* clear the screen - this and the previous prevent artifacts between lists, Attributes are the color, stencil and tag buffers */
     EVE_cmd_dl_burst(TAG(0));
+
     EVE_cmd_dl_burst(VERTEX_FORMAT(0)); /* reduce precision for VERTEX2F to 1 pixel instead of 1/16 pixel default */
 
-    EVE_cmd_append_burst(MEM_DL_STATIC, num_dl_static); /* insert static part of display-list from copy in gfx-mem */
+    //EVE_cmd_append_burst(MEM_DL_STATIC, num_dl_static); /* insert static part of display-list from copy in gfx-mem */
     
     /* draw a rectangle on top */
     EVE_cmd_dl_burst(DL_BEGIN | EVE_RECTS);
     EVE_cmd_dl_burst(LINE_WIDTH(1*16)); /* size is in 1/16 pixel */
+    
     EVE_cmd_dl_burst(DL_COLOR_RGB | BLUE_1);
     EVE_cmd_dl_burst(VERTEX2F(0,0));
     EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE,LAYOUT_Y1-2));
@@ -203,13 +206,11 @@ void menu_display(){
 
     // EVE_cmd_setbitmap_burst(MEM_PIC1, EVE_RGB565, 100, 100);
   
-    #if defined (EVE_DMA)
-    EVE_cmd_number_burst(100, EVE_VSIZE - 65, 26, EVE_OPT_RIGHTX, cmd_fifo_size); /* number of bytes written to the cmd-fifo */
-    #endif
-    EVE_cmd_number_burst(100, EVE_VSIZE - 50, 26, EVE_OPT_RIGHTX, display_list_size); /* number of bytes written to the display-list by the command co-pro */
-    EVE_cmd_number_burst(100, EVE_VSIZE - 35, 26, EVE_OPT_RIGHTX|4, num_profile_a); /* duration in us of TFT_loop() for the touch-event part */
-    EVE_cmd_number_burst(100, EVE_VSIZE - 20, 26, EVE_OPT_RIGHTX|4, num_profile_b); /* duration in us of TFT_loop() for the display-list part */
+    while (EVE_busy()) {};
 
+    num_dl_static = EVE_memRead16(REG_CMD_DL);
+
+    EVE_cmd_memcpy(MEM_DL_STATIC, EVE_RAM_DL, num_dl_static);
     EVE_cmd_dl_burst(DL_DISPLAY); /* instruct the co-processor to show the list */
     EVE_cmd_dl_burst(CMD_SWAP); /* make this list active */
 
@@ -329,7 +330,7 @@ void task_menu(void* args){
                         break;
                     case 11:// cancel race
                         game_active = false;
-                        menu_display();
+                        //display_countdown(0);
                         break;
                     default: 
                         break;
@@ -337,7 +338,7 @@ void task_menu(void* args){
                 
             }
             if (!game_active){
-
+                
                 userNum = userNum > 4 ? 4 : userNum < 1 ? 1 : userNum;
                 lapNum = lapNum > 10 ? 10 : lapNum < 1 ? 1 : lapNum;
                 menu_display();
