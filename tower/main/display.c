@@ -141,17 +141,20 @@ void menu_display(){
     uint16_t cmd_fifo_size;
     cmd_fifo_size = EVE_dma_buffer_index*4; /* without DMA there is no way to tell how many bytes are written to the cmd-fifo */
     EVE_start_cmd_burst(); /* start writing to the cmd-fifo as one stream of bytes, only sending the address once */
+    
     EVE_cmd_dl_burst(CMD_DLSTART); /* start the display list */
     EVE_cmd_dl_burst(DL_CLEAR_RGB | WHITE); /* set the default clear color to white */
     EVE_cmd_dl_burst(DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG); /* clear the screen - this and the previous prevent artifacts between lists, Attributes are the color, stencil and tag buffers */
     EVE_cmd_dl_burst(TAG(0));
+
     EVE_cmd_dl_burst(VERTEX_FORMAT(0)); /* reduce precision for VERTEX2F to 1 pixel instead of 1/16 pixel default */
 
-    EVE_cmd_append_burst(MEM_DL_STATIC, num_dl_static); /* insert static part of display-list from copy in gfx-mem */
+    //EVE_cmd_append_burst(MEM_DL_STATIC, num_dl_static); /* insert static part of display-list from copy in gfx-mem */
     
     /* draw a rectangle on top */
     EVE_cmd_dl_burst(DL_BEGIN | EVE_RECTS);
     EVE_cmd_dl_burst(LINE_WIDTH(1*16)); /* size is in 1/16 pixel */
+    
     EVE_cmd_dl_burst(DL_COLOR_RGB | BLUE_1);
     EVE_cmd_dl_burst(VERTEX2F(0,0));
     EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE,LAYOUT_Y1-2));
@@ -203,13 +206,11 @@ void menu_display(){
 
     // EVE_cmd_setbitmap_burst(MEM_PIC1, EVE_RGB565, 100, 100);
   
-    #if defined (EVE_DMA)
-    EVE_cmd_number_burst(100, EVE_VSIZE - 65, 26, EVE_OPT_RIGHTX, cmd_fifo_size); /* number of bytes written to the cmd-fifo */
-    #endif
-    EVE_cmd_number_burst(100, EVE_VSIZE - 50, 26, EVE_OPT_RIGHTX, display_list_size); /* number of bytes written to the display-list by the command co-pro */
-    EVE_cmd_number_burst(100, EVE_VSIZE - 35, 26, EVE_OPT_RIGHTX|4, num_profile_a); /* duration in us of TFT_loop() for the touch-event part */
-    EVE_cmd_number_burst(100, EVE_VSIZE - 20, 26, EVE_OPT_RIGHTX|4, num_profile_b); /* duration in us of TFT_loop() for the display-list part */
+    while (EVE_busy()) {};
 
+    num_dl_static = EVE_memRead16(REG_CMD_DL);
+
+    EVE_cmd_memcpy(MEM_DL_STATIC, EVE_RAM_DL, num_dl_static);
     EVE_cmd_dl_burst(DL_DISPLAY); /* instruct the co-processor to show the list */
     EVE_cmd_dl_burst(CMD_SWAP); /* make this list active */
 
@@ -244,22 +245,22 @@ void race_display(){
     EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE,LAYOUT_Y1-2));
     EVE_cmd_dl_burst(DL_END);
 
-    EVE_cmd_dl_burst(TAG(11));
-    EVE_cmd_button_burst(20, 15, 150, 40, 30, 0, "Back");
-    EVE_cmd_dl_burst(TAG(0));
-
     EVE_cmd_text_burst(EVE_HSIZE/2, 15, 30, EVE_OPT_CENTERX, "Mario Kart!");
+
+   
        
     // set line color to black
     EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
     EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
-    EVE_cmd_dl_burst(VERTEX2F(0, divider+50));
-    EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, divider+50));
+    EVE_cmd_dl_burst(VERTEX2F(0, LAYOUT_Y1+50));
+    EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, LAYOUT_Y1+50));
     EVE_cmd_dl_burst(DL_END);
-    EVE_cmd_text_burst(0, divider, 30, 0, "Player");
-    EVE_cmd_text_burst(100, divider, 30, 0, "Laps");
-    EVE_cmd_text_burst(170, divider, 30, 0, "Last lap time");
-    while(EVE_busy());
+
+
+    EVE_cmd_text_burst(0, LAYOUT_Y1, 30, 0, "Player");
+    EVE_cmd_text_burst(100, LAYOUT_Y1, 30, 0, "Laps");
+    EVE_cmd_text_burst(170, LAYOUT_Y1, 30, 0, "Last lap time");
+   // while(EVE_busy()) {};
 
     for(int i = 0; i < userNum; i++){
         divider += 50;
@@ -275,14 +276,10 @@ void race_display(){
         EVE_cmd_text_burst(170, divider, 30, 0, "xx:xx:xx");
 
     }
-    // EVE_cmd_text_burst(680, EVE_VSIZE/2-80, 30, EVE_OPT_CENTERX, "Start Game?");
-    // EVE_cmd_text_burst(200, 100, 30, EVE_OPT_CENTERX, "User Number:");
-    // EVE_cmd_text_burst(200, 200, 30, EVE_OPT_CENTERX, "Lap Number:");
-    
-    // itoa(userNum, &number, 10);
-    // EVE_cmd_text_burst(200, 150, 30, EVE_OPT_CENTERX, number);
-    // itoa(lapNum, &number, 10);
-    // EVE_cmd_text_burst(200, 250, 30, EVE_OPT_CENTERX, number);
+    EVE_cmd_dl_burst(TAG(11));
+    EVE_cmd_button_burst(20, 15, 150, 40, 30, 0, "Back");
+    EVE_cmd_dl_burst(TAG(0));
+
 
     while (EVE_busy()) {};
 
@@ -291,7 +288,7 @@ void race_display(){
     EVE_cmd_memcpy(MEM_DL_STATIC, EVE_RAM_DL, num_dl_static);
     EVE_cmd_dl_burst(DL_DISPLAY); /* instruct the co-processor to show the list */
     EVE_cmd_dl_burst(CMD_SWAP); /* make this list active */
-    while(EVE_busy());
+    while(EVE_busy()) {};
 
     EVE_end_cmd_burst();
 }
@@ -307,9 +304,9 @@ void task_menu(void* args){
         while(EVE_busy());
         tag = EVE_memRead8(REG_TOUCH_TAG); // how to read touched tag
         // vTaskSuspendAll();  // prevent context switching when sending commands to display
-        if(!game_active){  // race creation menu
+        //if(!game_active){  // race creation menu
             if (tag != 0){
-                printf("tag value:%d\n", tag);
+                printf("tag value:%d game active %d\n", tag, game_active);
                 switch(tag){
                     case 1:
                         userNum += 1;
@@ -331,29 +328,26 @@ void task_menu(void* args){
                         }
                         game_active = true;
                         break;
+                    case 11:// cancel race
+                        game_active = false;
+                        //display_countdown(0);
+                        break;
                     default: 
                         break;
                 }
+                
+            }
+            if (!game_active){
+                
                 userNum = userNum > 4 ? 4 : userNum < 1 ? 1 : userNum;
                 lapNum = lapNum > 10 ? 10 : lapNum < 1 ? 1 : lapNum;
+                menu_display();
             }
-            menu_display();
-        }
-        else{  // race active
-            // if(tag != 0){
-            //     printf("tag value:%d\n", tag);
-            //     switch(tag){
-            //         case 11:// cancel race
-            //             break;
-            //         default:
-            //             break;
-            //     }
-            // }
-            race_display();
-        }
- 
-        // xTaskResumeAll();
-        vTaskDelay(100/portTICK_PERIOD_MS);
+            else{
+                race_display();
+            }
+
+        vTaskDelay(150/portTICK_PERIOD_MS);
     }
 
 

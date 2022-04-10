@@ -362,8 +362,8 @@ void app_main(void) {
 
 	//setup the hash map
 	initialize_hash();
-	//xTaskCreate(queue_process_task, "Receive_from_car", 2048, NULL, 2, NULL);
-	//xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 2, NULL);
+	xTaskCreate(queue_process_task, "Receive_from_car", 2048, NULL, 2, NULL);
+	xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 2, NULL);
 
 	display_init();
 	//display_menu();
@@ -371,4 +371,5 @@ void app_main(void) {
 	//display_button(WHITE);
 	//xTaskCreate(touch_task, "handle_touches", 2048, NULL, 2, NULL);
 	xTaskCreate(task_menu, "handle_touches", 2048, NULL, 2, NULL);
+	//race_display();
 }
