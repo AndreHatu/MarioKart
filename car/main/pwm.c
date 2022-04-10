@@ -14,8 +14,8 @@ void mcpwm_example_gpio_initialize(void)
     pwm_config.counter_mode = MCPWM_UP_COUNTER ;
     pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
     mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);  
-    //brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, V0);
-    //brushed_motor_b(MCPWM_UNIT_0, MCPWM_TIMER_0, VFRONT);
+    brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, V0);
+    brushed_motor_b(MCPWM_UNIT_0, MCPWM_TIMER_0, VFRONT);
 }
 
 void brushed_motor_a(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num , float duty_cycle)

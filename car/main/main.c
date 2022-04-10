@@ -54,11 +54,11 @@ int64_t millis() {
 }
 
 void print_packet(controls_packet packet, bool rev){
-	printf(packet.left ? "left |" : "     |");
-	printf(packet.right ? "right |" : "      |");
-	printf(packet.up ? "up |" : "   |");
-	printf(packet.down ? "down \n" : "     \n");
-	printf(packet.mod ? "mod \n" : "     \n");
+	// printf(packet.left ? "left |" : "     |");
+	// printf(packet.right ? "right |" : "      |");
+	// printf(packet.up ? "up |" : "   |");
+	// printf(packet.down ? "down \n" : "     \n");
+	// printf(packet.mod ? "mod \n" : "     \n");
 	if (!rev){
 		gpio_set_level(MOTOR_PIN_FW, packet.up);
 		gpio_set_level(MOTOR_PIN_BW, packet.down);
