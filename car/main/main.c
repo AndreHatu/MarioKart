@@ -30,10 +30,10 @@
 #define CONTROLLER CONTROLLER1_MAC_ADDR
 #define ANOTHER_CAR	CAR2_MAC_ADDR
 #define MY_CAR CAR1_MAC_ADDR
-#define MOTOR_PIN_BW 12   // in3
-#define MOTOR_PIN_FW 13   // in4
-#define MOTOR_PIN_LEFT 2  // in2
-#define MOTOR_PIN_RIGHT 4 // in1
+#define MOTOR_PIN_BW 14   // in3
+#define MOTOR_PIN_FW 27   // in4
+#define MOTOR_PIN_LEFT 33  // in2
+#define MOTOR_PIN_RIGHT 25 // in1
 //#define MOD 15 // in1
 
 static xQueueHandle ctrl_recv_q;
@@ -343,10 +343,10 @@ void tag_handler(uint8_t* serial_no){
 void app_main(void) {
 	mod_flag =0;
 	const rc522_start_args_t start_args = {
-		.miso_io = 25,
-		.mosi_io = 23,
-		.sck_io = 19,
-		.sda_io = 22,
+		.miso_io = 16,
+		.mosi_io = 4,
+		.sck_io = 18,
+		.sda_io = 15,
 		.callback = &tag_handler
 	};
 	// ESP_ERROR_CHECK(rc522_start(start_args));

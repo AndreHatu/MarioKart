@@ -150,9 +150,9 @@ void tag_handler(tag_packet packet){
 //receive data from car (NFC tag information)
 static void queue_process_task(void *p)
 {
-	if (!start_game){
-		taskYIELD();
-	}
+	// if (!start_game){
+	// 	taskYIELD();
+	// }
     tag_packet* recv_packet = malloc(sizeof(tag_packet));
 
     ESP_LOGI("Tower", "Listening");
