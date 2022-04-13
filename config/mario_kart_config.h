@@ -26,8 +26,10 @@
 //Struct for packets being sent from controller to car
 typedef struct __attribute__((packed)) {
 	uint8_t checkpoint;
-	int64_t lap_time;
 	int32_t curr_lap;
+	uint8_t lap_ms;
+	uint8_t lap_sec;
+	uint32_t lap_min;
 } Car_Status;
 
 

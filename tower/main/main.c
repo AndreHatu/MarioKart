@@ -29,15 +29,15 @@ char value[4]; // buffer to copy the value of a certain key
 int current_time;
 int start_time;
 
-Car_Status Car1_status = { .checkpoint = 0, .lap_time = 0, .curr_lap = 0 };
-Car_Status Car2_status = { .checkpoint = 0, .lap_time = 0, .curr_lap = 0 };
+Car_Status Car1_status = { .checkpoint = 0, .lap_min = 0, .lap_sec = 0, .lap_ms = 0, .curr_lap = 0 };
+Car_Status Car2_status = { .checkpoint = 0, .lap_min = 0, .lap_sec = 0, .lap_ms = 0, .curr_lap = 0 };
 
 Start_pack Start_information = { .time_now = 0, .user_num = 0, .lap_num = 0 };
 
 int64_t millis() {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
+	return (tv.tv_sec * 100LL + (tv.tv_usec / 10000LL));
 }
 
 
@@ -70,14 +70,17 @@ void tag_handler(tag_packet packet){
 	uint8_t car1[MAC_LEN] = CAR1_MAC_ADDR;
 	uint8_t car2[MAC_LEN] = CAR2_MAC_ADDR;
 	uint8_t other_car[MAC_LEN];
+	uint8_t car_id;
 
 	if (strcmp((char*)(car1), (char*)(packet.src_mac)) == 0){
 		memcpy(&other_car, car2, MAC_LEN);
 		my_car = Car1_status;
+		car_id = 1;
 	}
 	else{
 		memcpy(&other_car, car2, MAC_LEN);	
 		my_car = Car2_status;	
+		car_id = 2;
 	}
 	uint8_t id[TAG_LEN];
 	memcpy(id, packet.tag_id, TAG_LEN);
@@ -112,7 +115,7 @@ void tag_handler(tag_packet packet){
 			new_packet->modifier = mod;
 
 			//if powerup, send back to sender address, if not, send to the other car
-			memcpy(&(packet.src_mac), packet.src_mac, MAC_LEN);
+			memcpy(&(new_packet->target_mac_addr), packet.src_mac, MAC_LEN);
 			
 			//add packet to queue
 			if(xQueueSend(modifier_q, new_packet, portMAX_DELAY) != pdTRUE){
@@ -124,21 +127,27 @@ void tag_handler(tag_packet packet){
 			
 	else if (value[0] == 'C'){
 			//figure out which car status to modify
-			printf("current checkpoint: %02x, lap time:%ld \n", my_car.checkpoint, (long)(my_car.lap_time));
+			printf("startTime: %ld, packet laptime: %ld\n", (long)Start_information.time_now, (long)packet.lap_time);
+			printf("current checkpoint: %02x, lap time:%d:%d:%d \n", my_car.checkpoint, my_car.lap_min, my_car.lap_sec, my_car.lap_ms);
 			int val = value[1] - '0';
+			int64_t lap_time = packet.lap_time - Start_information.time_now;
+			my_car.lap_min = lap_time/6000;
+			my_car.lap_sec = (lap_time%6000)/100;
+			my_car.lap_ms = lap_time%6100;
 			if (val == (my_car.checkpoint%5)){
-
-				my_car.lap_time += packet.lap_time;
+				//my_car.lap_time += packet.lap_time;
 				my_car.checkpoint++;
 				if (my_car.checkpoint >= 5){
 					my_car.checkpoint %= 5;
 					my_car.curr_lap += 1;
 				}
+				// update_status(car_id, my_car.checkpoint, my_car.lap_time, my_car.curr_lap);
 			}
+			printf("new checkpoint: %02x, lap time:%d:%d:%d \n", my_car.checkpoint, my_car.lap_min, my_car.lap_sec, my_car.lap_ms);
 			//update lap status
 			printf("check point read\n");
 			printf("car status updated\n");
-			printf("new checkpoint: %02x, lap time:%ld \n", my_car.checkpoint, (long)(my_car.lap_time));
+			//printf("new checkpoint: %02x, lap time:%ld \n", my_car.checkpoint, (long)(my_car.lap_time));
 	}
 
 
@@ -312,34 +321,42 @@ void initialize_hash(){
 	sm_put(sm, ")$6>%", "M");
 	sm_put(sm, ")$#Q", "M");
 	sm_put(sm, ")$I5Q", "M");
-	sm_put(sm, ")$4^e", "M");
-	sm_put(sm, ")$c*h", "M");
-	sm_put(sm, ")$V0w", "M");
-	sm_put(sm, ")$8e^", "M");
 
-	//stack 4
-	sm_put(sm, ")$y(R", "M");
-	sm_put(sm, ")$&83", "M");
-	sm_put(sm, ")$|\"Q", "M");
-	sm_put(sm, ")$Lb#", "M");
-	sm_put(sm, ")$28+", "M");
-	sm_put(sm, ")$93'", "M");
-	sm_put(sm, ")$>2#", "M");
-	sm_put(sm, ")$zW\"", "M");
-	sm_put(sm, ")$OZ", "M");
-	sm_put(sm, ")$=*8", "M");
-	
-	//stack 5
-	sm_put(sm, ")$&KD", "C1");
-	sm_put(sm, ")$<du", "C1");
+	// Checkpoint 5
+	sm_put(sm, ")$4^e", "C5");
+	sm_put(sm, ")$c*h", "C5");
+	sm_put(sm, ")$V0w", "C5");
+	sm_put(sm, ")$8e^", "C5");
+
+	// Checkpoint 4
+	sm_put(sm, ")$y(R", "C4");
+	sm_put(sm, ")$&83", "C4");
+	sm_put(sm, ")$|\"Q", "C4");
+	sm_put(sm, ")$Lb#", "C4");
+
+	// Checkpoint 3
+	sm_put(sm, ")$28+", "C3");
+	sm_put(sm, ")$93'", "C3");
+	sm_put(sm, ")$>2#", "C3");
+	sm_put(sm, ")$zW\"", "C3");
+
+	// Checkpoint 2
+	sm_put(sm, ")$OZ", "C2");
+	sm_put(sm, ")$=*8", "C2");
+	sm_put(sm, ")$&KD", "C2");
+	sm_put(sm, ")$<du", "C2");
+
+	// Checkpoint 1
 	sm_put(sm, ")$d/h", "C1");
 	sm_put(sm, ")$>,=", "C1");
 	sm_put(sm, ")$v-t", "C1");
 	sm_put(sm, ")$Pl1", "C1");
-	sm_put(sm, ")$7+1", "C1");
-	sm_put(sm, ")$<~m", "C1");
-	sm_put(sm, ")$u2h", "C1");
-	sm_put(sm, ")$6rI", "C1");
+
+	// Checkpoint 0 Start line
+	sm_put(sm, ")$7+1", "C0");
+	sm_put(sm, ")$<~m", "C0");
+	sm_put(sm, ")$u2h", "C0");
+	sm_put(sm, ")$6rI", "C0");
 }
 
 void app_main(void) {
