@@ -29,8 +29,8 @@ char value[4]; // buffer to copy the value of a certain key
 int current_time;
 int start_time;
 
-Car_Status Car1_status = { .checkpoint = 0, .lap_time = 0 };
-Car_Status Car2_status = { .checkpoint = 0, .lap_time = 0 };
+Car_Status Car1_status = { .checkpoint = 0, .lap_time = 0, .curr_lap = 0 };
+Car_Status Car2_status = { .checkpoint = 0, .lap_time = 0, .curr_lap = 0 };
 
 Start_pack Start_information = { .time_now = 0, .user_num = 0, .lap_num = 0 };
 
@@ -112,7 +112,7 @@ void tag_handler(tag_packet packet){
 			new_packet->modifier = mod;
 
 			//if powerup, send back to sender address, if not, send to the other car
-			memcpy(&(new_packet->target_mac_addr), packet.src_mac, MAC_LEN);
+			memcpy(&(packet.src_mac), packet.src_mac, MAC_LEN);
 			
 			//add packet to queue
 			if(xQueueSend(modifier_q, new_packet, portMAX_DELAY) != pdTRUE){
@@ -132,6 +132,7 @@ void tag_handler(tag_packet packet){
 				my_car.checkpoint++;
 				if (my_car.checkpoint >= 5){
 					my_car.checkpoint %= 5;
+					my_car.curr_lap += 1;
 				}
 			}
 			//update lap status
@@ -150,9 +151,9 @@ void tag_handler(tag_packet packet){
 //receive data from car (NFC tag information)
 static void queue_process_task(void *p)
 {
-	// if (!start_game){
-	// 	taskYIELD();
-	// }
+	if (!start_game){
+		taskYIELD();
+	}
     tag_packet* recv_packet = malloc(sizeof(tag_packet));
 
     ESP_LOGI("Tower", "Listening");
@@ -170,9 +171,9 @@ static void queue_process_task(void *p)
 }
 
 void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
-	if (!start_game){
-		return;
-	}
+	// if (!start_game){
+	// 	taskYIELD();
+	// }
 	static tag_packet recv_packet;
 
 	ESP_LOGI("Tower", "%d bytes incoming from " MACSTR, len, MAC2STR(mac_addr));
@@ -199,7 +200,7 @@ static void queue_send_task(void* args){
 	for(;;){
 		if (xQueueReceive(modifier_q, packet, portMAX_DELAY) == pdTRUE){
 			// NOTE: need to add some switching logic to figure out if we send packet to either car or both
-			if(esp_now_send(car, (uint8_t*)packet, sizeof(modifier_packet)) != ESP_OK){
+			if(esp_now_send(packet->target_mac_addr, (uint8_t*)packet, sizeof(modifier_packet)) != ESP_OK){
 				// if dest_mac is NULL, packet is broadcast to all peers
 				ESP_LOGE("Car", "Error sending packet to tower\n");
 			}
@@ -275,27 +276,7 @@ void initialize_hash(){
 	if (sm == NULL){
 		printf("string map not created \n");
 	}
-	//save checkpoint
-	// uint8_t id [TAG_LEN] = {0x88, 0x4, 0x36, 0x72, 0xc8};
-	// for (int i = 0; i < TAG_LEN; i++){
-	// 	if (id[i] > 0x7f){
-	// 		id[i] %= 0x7f;
-	// 	}
-	// 	if (id[i]<0x20){
-	// 		id[i] += 0x20;
-	// 	}
-	// }
-	// char str[TAG_LEN+1];
-    // memcpy(str, id, TAG_LEN);
-	// str[TAG_LEN] = '\0';
-	// printf("add tag: %s \n", str);
-	//printf("%s", "r68;E\0\n");
-	//sm_put(sm, "r68;E", "C0");
-	// sm_put(sm, "1", "C1");
-	// sm_put(sm, "2", "C2");
-	// sm_put(sm, "3", "C3");
-	// sm_put(sm, "4", "C4");
-
+	
 	//save modifier
 	sm_put(sm, "r68;E", "M");
 	

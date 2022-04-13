@@ -271,7 +271,7 @@ void race_display(){
         EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, divider+50));
         EVE_cmd_dl_burst(DL_END);
 
-        EVE_cmd_text_burst(0, divider, 30, 0, "x");
+        EVE_cmd_text_burst(0, divider, 30, 0, i);
         EVE_cmd_text_burst(100, divider, 30, 0, "y");
         EVE_cmd_text_burst(170, divider, 30, 0, "xx:xx:xx");
 

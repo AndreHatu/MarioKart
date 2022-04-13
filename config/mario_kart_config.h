@@ -27,6 +27,7 @@
 typedef struct __attribute__((packed)) {
 	uint8_t checkpoint;
 	int64_t lap_time;
+	int32_t curr_lap;
 } Car_Status;
 
 
