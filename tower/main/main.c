@@ -55,8 +55,8 @@ uint8_t random_modifier(){
 	//	1: power down
 	//	2: reverse control
 	//	3: stop
-	return (uint8_t) (esp_random() % 4);
-	//return 0;
+	//return (uint8_t) (esp_random() % 4);
+	return 0;
 }
 
 // assign random modifier based on tag or mark checkpoint
@@ -119,7 +119,7 @@ void tag_handler(tag_packet packet){
 				ESP_LOGW("Tower", "Modifier Queue Full");
 			}
 			free(new_packet);
-			printf("Send Success\n");
+			printf("Modifier Send Success\n");
 	}
 			
 	else if (value[0] == 'C'){
@@ -136,6 +136,7 @@ void tag_handler(tag_packet packet){
 				}
 			}
 			//update lap status
+			printf("check point read\n");
 			printf("car status updated\n");
 			printf("new checkpoint: %02x, lap time:%ld \n", my_car.checkpoint, (long)(my_car.lap_time));
 	}
@@ -171,9 +172,9 @@ static void queue_process_task(void *p)
 }
 
 void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
-	// if (!start_game){
-	// 	taskYIELD();
-	// }
+	if (!start_game){
+		taskYIELD();
+	}
 	static tag_packet recv_packet;
 
 	ESP_LOGI("Tower", "%d bytes incoming from " MACSTR, len, MAC2STR(mac_addr));
@@ -196,7 +197,7 @@ static void queue_send_task(void* args){
 	// const uint8_t DEST_MAC1[] = CAR1_MAC_ADDR;
 	// const uint8_t DEST_MAC2[] = CAR2_MAC_ADDR;
 	modifier_packet* packet = malloc(sizeof(modifier_packet));
-	uint8_t car[MAC_LEN] = CAR2_MAC_ADDR;
+	uint8_t car[MAC_LEN] = CAR1_MAC_ADDR;
 	for(;;){
 		if (xQueueReceive(modifier_q, packet, portMAX_DELAY) == pdTRUE){
 			// NOTE: need to add some switching logic to figure out if we send packet to either car or both
@@ -280,59 +281,65 @@ void initialize_hash(){
 	//save modifier
 	sm_put(sm, "r68;E", "M");
 	
-    // sm_put(sm, ")$h^", "M");
-	// sm_put(sm, ")$0yd", "M");
-	// sm_put(sm, ")$&V", "M");
-	// sm_put(sm, ")$ >3", "M");
-	// sm_put(sm, ")$1(6", "M");
-	// sm_put(sm, ")$Y,X", "M");
-	// sm_put(sm, ")$G'M", "M");
-	// sm_put(sm, ")$a:V", "M");
-	// sm_put(sm, ")$6|e", "M");
-	// sm_put(sm, ")$%%rZ", "M");
+	//stack 1
+    sm_put(sm, ")$h^", "M");
+	sm_put(sm, ")$0yd", "M");
+	sm_put(sm, ")$&V", "M");
+	sm_put(sm, ")$ >3", "M");
+	sm_put(sm, ")$1(6", "M");
+	sm_put(sm, ")$Y,X", "M");
+	sm_put(sm, ")$G'M", "M");
+	sm_put(sm, ")$a:V", "M");
+	sm_put(sm, ")$6|e", "M");
+	sm_put(sm, ")$%rZ", "M");
 
-	// sm_put(sm, ")$=N\\", "M");
-	// sm_put(sm, ")$8lY", "M");
-	// sm_put(sm, ")$/$", "M");
-	// sm_put(sm, ")$x;P", "M");
-	// sm_put(sm, ")$ 8+", "M");
-	// sm_put(sm, ")$Jm(", "M");
-	// sm_put(sm, ")$C/A", "M");
-	// sm_put(sm, ")$+Vt", "M");
-	// sm_put(sm, ")$c,d", "M");
-	// sm_put(sm, ")$=l^", "M");
+	//stack 2
+	sm_put(sm, ")$=N\\", "C0");
+	sm_put(sm, ")$8lY", "C0");
+	sm_put(sm, ")$/$", "C0");
+	sm_put(sm, ")$x;P", "C0");
+	sm_put(sm, ")$ 8+", "C0");
+	sm_put(sm, ")$Jm(", "C0");
+	sm_put(sm, ")$C/A", "C0");
+	sm_put(sm, ")$+Vt", "C0");
+	sm_put(sm, ")$c,d", "C0");
+	sm_put(sm, ")$=l^", "C0");
 	
-	// sm_put(sm, ")$>`Q", "M");
-	// sm_put(sm, ")$w \\", "M");
-	// sm_put(sm, ")$?8*", "M");
-	// sm_put(sm, ")$6>%%", "M");
-	// sm_put(sm, ")$#Q", "M");
-	// sm_put(sm, ")$I5Q", "M");
-	// sm_put(sm, ")$4^e", "M");
-	// sm_put(sm, ")$c*h", "M");
-	// sm_put(sm, ")$V0w ", "M");
+	//stack 3
+	sm_put(sm, ")$>`Q", "M");
+	sm_put(sm, ")$w \\", "M");
+	sm_put(sm, ")$?8*", "M");
+	sm_put(sm, ")$6>%", "M");
+	sm_put(sm, ")$#Q", "M");
+	sm_put(sm, ")$I5Q", "M");
+	sm_put(sm, ")$4^e", "M");
+	sm_put(sm, ")$c*h", "M");
+	sm_put(sm, ")$V0w", "M");
+	sm_put(sm, ")$8e^", "M");
 
-	// sm_put(sm, ")$y(R", "M");
-	// sm_put(sm, ")$&83", "M");
-	// sm_put(sm, ")$|""Q", "M");
-	// sm_put(sm, ")$Lb#", "M");
-	// sm_put(sm, ")$28+", "M");
-	// sm_put(sm, ")$93'", "M");
-	// sm_put(sm, ")$>2#", "M");
-	// sm_put(sm, ")$zW""", "M");
-	// sm_put(sm, ")$OZ", "M");
-	// sm_put(sm, ")$=*8", "M");
+	//stack 4
+	sm_put(sm, ")$y(R", "M");
+	sm_put(sm, ")$&83", "M");
+	sm_put(sm, ")$|\"Q", "M");
+	sm_put(sm, ")$Lb#", "M");
+	sm_put(sm, ")$28+", "M");
+	sm_put(sm, ")$93'", "M");
+	sm_put(sm, ")$>2#", "M");
+	sm_put(sm, ")$zW\"", "M");
+	sm_put(sm, ")$OZ", "M");
+	sm_put(sm, ")$=*8", "M");
 	
-	// sm_put(sm, ")$&KD", "M");
-	// sm_put(sm, ")$<du", "M");
-	// sm_put(sm, ")$d/h", "M");
-	// sm_put(sm, ")$>,=", "M");
-	// sm_put(sm, ")$v-t", "M");
-	// sm_put(sm, ")$Pl1", "M");
-	// sm_put(sm, ")$7+1", "M");
-	// sm_put(sm, ")$<~m", "M");
-	// sm_put(sm, ")$u2h", "M");
-	// sm_put(sm, ")$6rI", "M");
+	//stack 5
+	sm_put(sm, ")$&KD", "C1");
+	sm_put(sm, ")$<du", "C1");
+	sm_put(sm, ")$d/h", "C1");
+	sm_put(sm, ")$>,=", "C1");
+	sm_put(sm, ")$v-t", "C1");
+	sm_put(sm, ")$Pl1", "C1");
+	sm_put(sm, ")$7+1", "C1");
+	sm_put(sm, ")$<~m", "C1");
+	sm_put(sm, ")$u2h", "C1");
+	sm_put(sm, ")$6rI", "C1");
 }
 
 void app_main(void) {
