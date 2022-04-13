@@ -16,17 +16,14 @@
 
 #include "../../config/mario_kart_config.h"
 
-#define CAR1 CAR1_MAC_ADDR
-#define CAR2 CAR2_MAC_ADDR
-
 //BIG BRDB:   3c:61:05:7d:e0:88
 //SMALL BRDB: 3c:61:05:7d:dd:a4
 
-#define GPIO_INPUT_0 26
-#define GPIO_INPUT_1 33
-#define GPIO_INPUT_2 23
-#define GPIO_INPUT_3 22
-#define GPIO_INPUT_4 19
+#define GPIO_INPUT_0 5
+#define GPIO_INPUT_1 19
+#define GPIO_INPUT_2 27
+#define GPIO_INPUT_3 26
+#define GPIO_INPUT_4 18
 #define GPIO_INPUT_PIN_SELECT ((1ULL<<GPIO_INPUT_0)|(1ULL<<GPIO_INPUT_1)|(1ULL<<GPIO_INPUT_2)|(1ULL<<GPIO_INPUT_3)|(1ULL<<GPIO_INPUT_4))
 
 static EventGroupHandle_t s_evt_group;

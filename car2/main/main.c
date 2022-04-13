@@ -27,13 +27,13 @@
 
 // NOTE: change accordingly
 #define TOWER TOWER_MAC_ADDR
-#define CONTROLLER CAR1_MAC_ADDR
-#define ANOTHER_CAR	CONTROLLER2_MAC_ADDR
+#define CONTROLLER CONTROLLER2_MAC_ADDR
+#define ANOTHER_CAR	CAR1_MAC_ADDR
 #define MY_CAR CAR2_MAC_ADDR
-#define MOTOR_PIN_BW 12   // in3
-#define MOTOR_PIN_FW 13   // in4
-#define MOTOR_PIN_LEFT 2  // in2
-#define MOTOR_PIN_RIGHT 4 // in1
+#define MOTOR_PIN_BW 14   // in3
+#define MOTOR_PIN_FW 27   // in4
+#define MOTOR_PIN_LEFT 33  // in2
+#define MOTOR_PIN_RIGHT 25 // in1
 //#define MOD 15 // in1
 
 static xQueueHandle ctrl_recv_q;
@@ -132,13 +132,13 @@ static void ctrl_queue_process_task(void *p)
 					else 
 					{
 						//printf("modifier: something else\n");
-						esp_err_t err;
-						active_mod_packet * act_pack = malloc(sizeof(active_mod_packet));
+
+						active_mod_packet* act_pack = malloc(sizeof(active_mod_packet));
 						act_pack->modifier = mod_pack->modifier;
-						printf("modifier: negative\n");
+						esp_err_t err;
 						const uint8_t DEST_MAC[MAC_LEN] = ANOTHER_CAR;
 						if((err = esp_now_send(DEST_MAC, (uint8_t*)act_pack, sizeof(active_mod_packet))) != ESP_OK){
-							ESP_LOGE("Car", "Error sending packet to different car");
+							ESP_LOGE("Car", "Error sending packet to tower");
 							printf("Error: %x\n", err);
 						}
 						free(act_pack);
@@ -242,6 +242,7 @@ void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
 	}
 	else if (len == sizeof(active_mod_packet)){
 		static active_mod_packet recv_packet;
+		printf("recved activ mod: %02x\n", recv_packet.modifier);
 		memcpy(&recv_packet, data, len);
 		if (xQueueSend(active_mod_q, &recv_packet, 0) != pdTRUE) {
 			ESP_LOGW("Car", "Modifiers Queue full, discarded");
@@ -295,13 +296,13 @@ static void initialize_esp_now_car(void){
 	};
 	
 	const esp_now_peer_info_t dest_peer2 = {
-		.peer_addr = ANOTHER_CAR,
+		.peer_addr = ANOTHER_CAR, // another car
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
 
 	const esp_now_peer_info_t dest_peer3 = {
-		.peer_addr = CONTROLLER,
+		.peer_addr = CONTROLLER, // my controller
 		.channel = 1,
 		.ifidx = ESP_IF_WIFI_STA
 	};
@@ -319,7 +320,7 @@ void tag_handler(uint8_t* serial_no){
 	printf("\n");
 	gpio_set_level(5, 0);
 
-	//time when car run voer tag
+	//time when car run over tag
 	struct timeval tv_now;
 	gettimeofday(&tv_now, NULL);
 	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
@@ -337,13 +338,15 @@ void tag_handler(uint8_t* serial_no){
 }
 
 
+
+
 void app_main(void) {
 	mod_flag =0;
 	const rc522_start_args_t start_args = {
-		.miso_io = 25,
-		.mosi_io = 23,
-		.sck_io = 19,
-		.sda_io = 22,
+		.miso_io = 16,
+		.mosi_io = 4,
+		.sck_io = 18,
+		.sda_io = 15,
 		.callback = &tag_handler
 	};
 	// ESP_ERROR_CHECK(rc522_start(start_args));
@@ -368,10 +371,9 @@ void app_main(void) {
 	initialize_esp_now_car();
 	mcpwm_example_gpio_initialize();
 
-	//mcpwm_example_config(NULL);
 	xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
 	xTaskCreate(tag_queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
-	xTaskCreate(tower_queue_process_task, "Receive_from_controller", 2048, NULL, 3, NULL);
+	xTaskCreate(tower_queue_process_task, "Receive_from_tower", 2048, NULL, 3, NULL);
 	xTaskCreate(active_mod_queue_process_task, "Receive active modifier", 2048, NULL, 3, NULL);
 	//xTaskCreate(test_comm_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);
 	//xTaskCreate(mcpwm_example_config, "mcpwm_example_config", 4096, NULL, 5, NULL);
