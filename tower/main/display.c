@@ -12,6 +12,23 @@ int8_t lapNum = 1;
 bool game_active = false;
 
 
+
+// Car_Status_display Car1_status = { .checkpoint = 0, .lap_time = 0, .curr_lap = 0 };
+// Car_Status_display Car2_status = { .checkpoint = 0, .lap_time = 0, .curr_lap = 0 };
+
+// void update_status(uint8_t car_id, uint8_t checkpoint, int64_t lap_time, int32_t curr_lap){
+//     if (car_id == 1){
+//         Car1_status.checkpoint = checkpoint;
+//         Car1_status.curr_lap = curr_lap;
+//         Car1_status.lap_time = lap_time;
+//     }
+//     else if (car_id == 2){
+//         Car2_status.checkpoint = checkpoint;
+//         Car2_status.curr_lap = curr_lap;
+//         Car2_status.lap_time = lap_time;
+//     }
+// }
+
 void reverse(char str[], int length){
     int start = 0;
     int end = length -1;
@@ -77,7 +94,7 @@ void display_init(){
 void display_countdown(int countdown){
     // ESP_LOGI("Tower", "In display_countdown");
 
-    char number[4];
+    //char number[4];
     EVE_start_cmd_burst(); /* start writing to the cmd-fifo as one stream of bytes, only sending the address once */
 
     EVE_cmd_dl_burst(CMD_DLSTART); /* start the display list */
@@ -122,7 +139,7 @@ void display_countdown(int countdown){
     EVE_cmd_number_burst(680, 250, 30, EVE_OPT_CENTERX, countdown);
   
 
-    while (EVE_busy()) {};
+    //while (EVE_busy()) {};
 
     num_dl_static = EVE_memRead16(REG_CMD_DL);
 
@@ -135,11 +152,11 @@ void display_countdown(int countdown){
 }
 
 void menu_display(){
-    char number[4];
+    //char number[4];
     // ESP_LOGI("Tower", "In menu_display");
 
-    uint16_t cmd_fifo_size;
-    cmd_fifo_size = EVE_dma_buffer_index*4; /* without DMA there is no way to tell how many bytes are written to the cmd-fifo */
+    // uint16_t cmd_fifo_size;
+    // cmd_fifo_size = EVE_dma_buffer_index*4; /* without DMA there is no way to tell how many bytes are written to the cmd-fifo */
     EVE_start_cmd_burst(); /* start writing to the cmd-fifo as one stream of bytes, only sending the address once */
     
     EVE_cmd_dl_burst(CMD_DLSTART); /* start the display list */
@@ -206,7 +223,7 @@ void menu_display(){
 
     // EVE_cmd_setbitmap_burst(MEM_PIC1, EVE_RGB565, 100, 100);
   
-    while (EVE_busy()) {};
+    //while (EVE_busy()) {};
 
     num_dl_static = EVE_memRead16(REG_CMD_DL);
 
@@ -220,7 +237,7 @@ void menu_display(){
 void race_display(){
     // ESP_LOGI("Tower", "In race_display");
     uint16_t divider = LAYOUT_Y1;
-
+    char number[4];
     EVE_start_cmd_burst(); /* start writing to the cmd-fifo as one stream of bytes, only sending the address once */
     EVE_cmd_dl_burst(CMD_DLSTART); /* start the display list */
     EVE_cmd_dl_burst(DL_CLEAR_RGB | WHITE); /* set the default clear color to white */
@@ -259,45 +276,99 @@ void race_display(){
 
     EVE_cmd_text_burst(0, LAYOUT_Y1, 30, 0, "Player");
     EVE_cmd_text_burst(100, LAYOUT_Y1, 30, 0, "Laps");
-    EVE_cmd_text_burst(170, LAYOUT_Y1, 30, 0, "Last lap time");
+    EVE_cmd_text_burst(200, LAYOUT_Y1, 30, 0, "Lap Time");
+    EVE_cmd_text_burst(350, LAYOUT_Y1, 30, 0, "Next Checkpoint");
    // while(EVE_busy()) {};
 
-    for(int i = 0; i < userNum; i++){
-        divider += 50;
-        /* draw a black line to separate things */
-        EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
-        EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
-        EVE_cmd_dl_burst(VERTEX2F(0, divider+50));
-        EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, divider+50));
-        EVE_cmd_dl_burst(DL_END);
+    // for(int i = 0; i < userNum; i++){
+    //     divider += 50;
+    //     /* draw a black line to separate things */
+    //     EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
+    //     EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
+    //     EVE_cmd_dl_burst(VERTEX2F(0, divider+50));
+    //     EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, divider+50));
+    //     EVE_cmd_dl_burst(DL_END);
 
-        EVE_cmd_text_burst(0, divider, 30, 0, "x");
-        EVE_cmd_text_burst(100, divider, 30, 0, "y");
-        EVE_cmd_text_burst(170, divider, 30, 0, "xx:xx:xx");
+    //     EVE_cmd_text_burst(0, divider, 30, 0, i);
+    //     EVE_cmd_text_burst(100, divider, 30, 0, "y");
+    //     EVE_cmd_text_burst(170, divider, 30, 0, "xx:xx:xx");
 
-    }
+    // }
+
+    //Car 1 status
+    divider += 50;
+    /* draw a black line to separate things */
+    EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
+    EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
+    EVE_cmd_dl_burst(VERTEX2F(0, divider+50));
+    EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, divider+50));
+    EVE_cmd_dl_burst(DL_END);
+
+    EVE_cmd_text_burst(0, divider, 30, 0, "Car 1");
+    itoa(Car1_status.curr_lap, &number, 10);
+    EVE_cmd_text_burst(100, divider, 30, 0, number);
+    EVE_cmd_text_burst(115, divider, 30, 0, "/5");
+
+    itoa(Car1_status.lap_min, &number, 10);
+    EVE_cmd_text_burst(200, divider, 30, 0, number);
+    EVE_cmd_text_burst(220, divider, 30, 0, ":");
+    itoa(Car1_status.lap_sec, &number, 10);
+    EVE_cmd_text_burst(230, divider, 30, 0, number);
+    EVE_cmd_text_burst(250, divider, 30, 0, ":");
+    itoa(Car1_status.lap_ms, &number, 10);
+    EVE_cmd_text_burst(260, divider, 30, 0, number);
+
+    itoa(Car1_status.checkpoint, &number, 10);
+    EVE_cmd_text_burst(350, divider, 30, 0, number);
+
+    //Car 2 status
+    divider += 50;
+    EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
+    EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
+    EVE_cmd_dl_burst(VERTEX2F(0, divider+50));
+    EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, divider+50));
+    EVE_cmd_dl_burst(DL_END);
+
+    EVE_cmd_text_burst(0, divider, 30, 0, "Car 2");
+    itoa(Car2_status.curr_lap, &number, 10);
+    EVE_cmd_text_burst(100, divider, 30, 0, number);
+    EVE_cmd_text_burst(115, divider, 30, 0, "/5");
+
+    itoa(Car2_status.lap_min, &number, 10);
+    EVE_cmd_text_burst(200, divider, 30, 0, number);
+    EVE_cmd_text_burst(220, divider, 30, 0, ":");
+    itoa(Car2_status.lap_sec, &number, 10);
+    EVE_cmd_text_burst(230, divider, 30, 0, number);
+    EVE_cmd_text_burst(250, divider, 30, 0, ":");
+    itoa(Car2_status.lap_ms, &number, 10);
+    EVE_cmd_text_burst(260, divider, 30, 0, number);
+
+    itoa(Car2_status.checkpoint, &number, 10);
+    EVE_cmd_text_burst(350, divider, 30, 0, number);
+
+
     EVE_cmd_dl_burst(TAG(11));
     EVE_cmd_button_burst(20, 15, 150, 40, 30, 0, "Back");
     EVE_cmd_dl_burst(TAG(0));
 
 
-    while (EVE_busy()) {};
+    //while (EVE_busy()) {};
 
     num_dl_static = EVE_memRead16(REG_CMD_DL);
 
     EVE_cmd_memcpy(MEM_DL_STATIC, EVE_RAM_DL, num_dl_static);
     EVE_cmd_dl_burst(DL_DISPLAY); /* instruct the co-processor to show the list */
     EVE_cmd_dl_burst(CMD_SWAP); /* make this list active */
-    while(EVE_busy()) {};
+    //while(EVE_busy()) {};
 
     EVE_end_cmd_burst();
 }
 
 void task_menu(void* args){
-    uint8_t counter = 0;
-    int start_time;
-    int current_time; 
-    int countdown;
+    // uint8_t counter = 0;
+    // int start_time;
+    // int current_time; 
+    // int countdown;
     uint8_t tag = 0;
     // menu_display();
     for(;;){

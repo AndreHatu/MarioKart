@@ -2,6 +2,7 @@
 #define DISPLAY_IF
 
 #include "EVE.h"
+#include "../../config/mario_kart_config.h"
 
 #define RED     0xff0000UL
 #define ORANGE  0xffa500UL
@@ -85,6 +86,10 @@
 //    0x0C, 0x7F, 0xFF, 0xD9,
 // };
 
+extern Car_Status Car1_status;
+extern Car_Status Car2_status;
+
+// void update_status(uint8_t car_id, uint8_t checkpoint, int64_t lap_time, int32_t curr_lap);
 void set_start_time(int8_t user, int8_t lap);
 void display_init();
 void menu_display();

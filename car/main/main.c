@@ -50,7 +50,7 @@ int current_time;
 int64_t millis() {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
+	return (tv.tv_sec * 100LL + (tv.tv_usec / 10000LL));
 }
 
 void print_packet(controls_packet packet, bool rev){
