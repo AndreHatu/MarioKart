@@ -1,7 +1,5 @@
 #include "pwm.h"
 
-
-
 void mcpwm_example_gpio_initialize(void)
 {
     printf("initializing mcpwm gpio...\n");
