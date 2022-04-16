@@ -305,21 +305,21 @@ void race_display(){
     EVE_cmd_dl_burst(DL_END);
 
     EVE_cmd_text_burst(0, divider, 30, 0, "Car 1");
-    itoa(Car1_status.curr_lap, &number, 10);
-    EVE_cmd_text_burst(100, divider, 30, 0, number);
+    // itoa(race.car1.curr_lap, &number, 10);
+    EVE_cmd_number_burst(100, divider, 30, 0, race.car1.curr_lap);
     EVE_cmd_text_burst(115, divider, 30, 0, "/5");
 
-    itoa(Car1_status.lap_min, &number, 10);
-    EVE_cmd_text_burst(200, divider, 30, 0, number);
-    EVE_cmd_text_burst(220, divider, 30, 0, ":");
-    itoa(Car1_status.lap_sec, &number, 10);
-    EVE_cmd_text_burst(230, divider, 30, 0, number);
-    EVE_cmd_text_burst(250, divider, 30, 0, ":");
-    itoa(Car1_status.lap_ms, &number, 10);
-    EVE_cmd_text_burst(260, divider, 30, 0, number);
+    // itoa(race.car1.lap_min, &number, 10);
+    EVE_cmd_number_burst(200, divider, 30, 0, race.car1.lap_min);
+    EVE_cmd_text_burst(230, divider, 30, 0, ":");
+    // itoa(race.car1.lap_sec, &number, 10);
+    EVE_cmd_number_burst(240, divider, 30, 0, race.car1.lap_sec);
+    EVE_cmd_text_burst(270, divider, 30, 0, ":");
+    // itoa(race.car1.lap_ms, &number, 10);
+    EVE_cmd_number_burst(280, divider, 30, 0, race.car1.lap_ms);
 
-    itoa(Car1_status.checkpoint, &number, 10);
-    EVE_cmd_text_burst(350, divider, 30, 0, number);
+    // itoa(race.car1.checkpoint, &number, 10);
+    EVE_cmd_number_burst(350, divider, 30, 0, race.car1.checkpoint);
 
     //Car 2 status
     divider += 50;
@@ -330,21 +330,21 @@ void race_display(){
     EVE_cmd_dl_burst(DL_END);
 
     EVE_cmd_text_burst(0, divider, 30, 0, "Car 2");
-    itoa(Car2_status.curr_lap, &number, 10);
-    EVE_cmd_text_burst(100, divider, 30, 0, number);
+    // itoa(race.car2.curr_lap, &number, 10);
+    EVE_cmd_number_burst(100, divider, 30, 0, race.car2.curr_lap);
     EVE_cmd_text_burst(115, divider, 30, 0, "/5");
 
-    itoa(Car2_status.lap_min, &number, 10);
-    EVE_cmd_text_burst(200, divider, 30, 0, number);
-    EVE_cmd_text_burst(220, divider, 30, 0, ":");
-    itoa(Car2_status.lap_sec, &number, 10);
-    EVE_cmd_text_burst(230, divider, 30, 0, number);
-    EVE_cmd_text_burst(250, divider, 30, 0, ":");
-    itoa(Car2_status.lap_ms, &number, 10);
-    EVE_cmd_text_burst(260, divider, 30, 0, number);
+    // itoa(race.car2.lap_min, &number, 10);
+    EVE_cmd_number_burst(200, divider, 30, 0, race.car2.lap_min);
+    EVE_cmd_text_burst(230, divider, 30, 0, ":");
+    // itoa(race.car2.lap_sec, &number, 10);
+    EVE_cmd_number_burst(240, divider, 30, 0, race.car2.lap_sec);
+    EVE_cmd_text_burst(270, divider, 30, 0, ":");
+    // itoa(race.car2.lap_ms, &number, 10);
+    EVE_cmd_number_burst(280, divider, 30, 0, race.car2.lap_ms);
 
-    itoa(Car2_status.checkpoint, &number, 10);
-    EVE_cmd_text_burst(350, divider, 30, 0, number);
+    // itoa(race.car2.checkpoint, &number, 10);
+    EVE_cmd_number_burst(350, divider, 30, 0, race.car2.checkpoint);
 
 
     EVE_cmd_dl_burst(TAG(11));
@@ -392,7 +392,7 @@ void task_menu(void* args){
                         lapNum -= 1;
                         break;
                     case 5:
-                        set_start_time(userNum, lapNum);
+                        start_race(userNum, lapNum);
                         for(int j = 5; j >=0 ; j--){
                             vTaskDelay(1000/portTICK_PERIOD_MS);
                             display_countdown(j);

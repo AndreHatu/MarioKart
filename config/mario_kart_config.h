@@ -23,15 +23,22 @@
 //#define 	  TOWER_MAC_ADDR {0x3c, 0x61, 0x05, 0x7d, 0xdd, 0xa4}// old
 #define 	  TOWER_MAC_ADDR {0x1c, 0x9d, 0xc2, 0x2f, 0x19, 0xbc}
 
-//Struct for packets being sent from controller to car
+//Struct for car status amid race
 typedef struct __attribute__((packed)) {
 	uint8_t checkpoint;
-	int32_t curr_lap;
+	uint8_t curr_lap;
 	uint8_t lap_ms;
 	uint8_t lap_sec;
 	uint32_t lap_min;
 } Car_Status;
 
+// struct to hold checkpoint times during a race
+typedef struct {
+	Car_Status car1;
+	uint64_t* car1_times;
+	Car_Status car2;
+	uint64_t* car2_times;
+} Race;
 
 //Struct for packets being sent from controller to car
 typedef struct __attribute__((packed)) {
@@ -78,9 +85,9 @@ typedef struct __attribute__((packed)) {
 } active_mod_packet;
 
 typedef struct __attribute__((packed)) {
-	int64_t time_now;
-	int8_t user_num;
-	int8_t lap_num;
+	uint64_t start_time;
+	uint8_t user_num;
+	uint8_t lap_num;
 } Start_pack;
 
 #endif
