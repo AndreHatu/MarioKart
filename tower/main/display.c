@@ -277,7 +277,7 @@ void race_display(){
     EVE_cmd_text_burst(0, LAYOUT_Y1, 30, 0, "Player");
     EVE_cmd_text_burst(100, LAYOUT_Y1, 30, 0, "Laps");
     EVE_cmd_text_burst(200, LAYOUT_Y1, 30, 0, "Lap Time");
-    EVE_cmd_text_burst(350, LAYOUT_Y1, 30, 0, "Next Checkpoint");
+    EVE_cmd_text_burst(400, LAYOUT_Y1, 30, 0, "Next Checkpoint");
    // while(EVE_busy()) {};
 
     // for(int i = 0; i < userNum; i++){
@@ -311,41 +311,42 @@ void race_display(){
 
     // itoa(race.car1.lap_min, &number, 10);
     EVE_cmd_number_burst(200, divider, 30, 0, race.car1.lap_min);
-    EVE_cmd_text_burst(230, divider, 30, 0, ":");
+    EVE_cmd_text_burst(260, divider, 30, 0, ":");
     // itoa(race.car1.lap_sec, &number, 10);
-    EVE_cmd_number_burst(240, divider, 30, 0, race.car1.lap_sec);
-    EVE_cmd_text_burst(270, divider, 30, 0, ":");
+    EVE_cmd_number_burst(270, divider, 30, 0, race.car1.lap_sec);
+    EVE_cmd_text_burst(210, divider, 30, 0, ":");
     // itoa(race.car1.lap_ms, &number, 10);
-    EVE_cmd_number_burst(280, divider, 30, 0, race.car1.lap_ms);
+    EVE_cmd_number_burst(320, divider, 30, 0, race.car1.lap_ms);
 
     // itoa(race.car1.checkpoint, &number, 10);
-    EVE_cmd_number_burst(350, divider, 30, 0, race.car1.checkpoint);
+    EVE_cmd_number_burst(400, divider, 30, 0, race.car1.checkpoint);
 
     //Car 2 status
-    divider += 50;
-    EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
-    EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
-    EVE_cmd_dl_burst(VERTEX2F(0, divider+50));
-    EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, divider+50));
-    EVE_cmd_dl_burst(DL_END);
+    if(userNum > 1){
+        divider += 50;
+        EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
+        EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
+        EVE_cmd_dl_burst(VERTEX2F(0, divider+50));
+        EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, divider+50));
+        EVE_cmd_dl_burst(DL_END);
 
-    EVE_cmd_text_burst(0, divider, 30, 0, "Car 2");
-    // itoa(race.car2.curr_lap, &number, 10);
-    EVE_cmd_number_burst(100, divider, 30, 0, race.car2.curr_lap);
-    EVE_cmd_text_burst(115, divider, 30, 0, "/5");
+        EVE_cmd_text_burst(0, divider, 30, 0, "Car 2");
+        // itoa(race.car2.curr_lap, &number, 10);
+        EVE_cmd_number_burst(100, divider, 30, 0, race.car2.curr_lap);
+        EVE_cmd_text_burst(115, divider, 30, 0, "/5");
 
-    // itoa(race.car2.lap_min, &number, 10);
-    EVE_cmd_number_burst(200, divider, 30, 0, race.car2.lap_min);
-    EVE_cmd_text_burst(230, divider, 30, 0, ":");
-    // itoa(race.car2.lap_sec, &number, 10);
-    EVE_cmd_number_burst(240, divider, 30, 0, race.car2.lap_sec);
-    EVE_cmd_text_burst(270, divider, 30, 0, ":");
-    // itoa(race.car2.lap_ms, &number, 10);
-    EVE_cmd_number_burst(280, divider, 30, 0, race.car2.lap_ms);
+        // itoa(race.car2.lap_min, &number, 10);
+        EVE_cmd_number_burst(200, divider, 30, 0, race.car2.lap_min);
+        EVE_cmd_text_burst(260, divider, 30, 0, ":");
+        // itoa(race.car2.lap_sec, &number, 10);
+        EVE_cmd_number_burst(270, divider, 30, 0, race.car2.lap_sec);
+        EVE_cmd_text_burst(290, divider, 30, 0, ":");
+        // itoa(race.car2.lap_ms, &number, 10);
+        EVE_cmd_number_burst(320, divider, 30, 0, race.car2.lap_ms);
 
-    // itoa(race.car2.checkpoint, &number, 10);
-    EVE_cmd_number_burst(350, divider, 30, 0, race.car2.checkpoint);
-
+        // itoa(race.car2.checkpoint, &number, 10);
+        EVE_cmd_number_burst(400, divider, 30, 0, race.car2.checkpoint);
+    }
 
     EVE_cmd_dl_burst(TAG(11));
     EVE_cmd_button_burst(20, 15, 150, 40, 30, 0, "Back");
@@ -410,7 +411,7 @@ void task_menu(void* args){
             }
             if (!game_active){
                 
-                userNum = userNum > 4 ? 4 : userNum < 1 ? 1 : userNum;
+                userNum = userNum > 2 ? 2 : userNum < 1 ? 1 : userNum;
                 lapNum = lapNum > 10 ? 10 : lapNum < 1 ? 1 : lapNum;
                 menu_display();
             }

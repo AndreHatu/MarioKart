@@ -50,7 +50,8 @@ int current_time;
 int64_t millis() {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
+	//return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
+	return (tv.tv_sec * 100LL + (tv.tv_usec / 10000LL));
 }
 
 void print_packet(controls_packet packet, bool rev){
@@ -107,7 +108,7 @@ static void ctrl_queue_process_task(void *p)
 			print_packet(recv_packet,rev);
 			if (mod_flag){
 				current_time = millis();
-				if (current_time - start_time >= 5000){
+				if (current_time - start_time >= 300){
 					printf("Back to normal state\n");
 					//printf("start time %d current time %d", start_time, current_time);
 					brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, V0);

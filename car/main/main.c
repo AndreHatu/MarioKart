@@ -50,7 +50,7 @@ int current_time;
 int64_t millis() {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	return (tv.tv_sec * 100LL + (tv.tv_usec / 10000LL));
+	return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
 }
 
 void print_packet(controls_packet packet, bool rev){
@@ -107,7 +107,7 @@ static void ctrl_queue_process_task(void *p)
 			print_packet(recv_packet,rev);
 			if (mod_flag){
 				current_time = millis();
-				if (current_time - start_time >= 5000){
+				if (current_time - start_time >= 300){
 					printf("Back to normal state\n");
 					//printf("start time %d current time %d", start_time, current_time);
 					brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, V0);
@@ -319,16 +319,15 @@ void tag_handler(uint8_t* serial_no){
 	gpio_set_level(5, 0);
 
 	//time when car run over tag
-	struct timeval tv_now;
-	gettimeofday(&tv_now, NULL);
-	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+
+	int64_t time_us = millis();
 
 	tag_packet packet;// = malloc(sizeof(tag_packet));
 	const uint8_t SRC_MAC[MAC_LEN] = MY_CAR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
 	memcpy(&(packet.src_mac), SRC_MAC, MAC_LEN);
 	memcpy(&(packet.tag_id), serial_no, TAG_LEN); // read data from tag reader module
 
-	printf("packet with soruce addr and tag id\n");
+	printf("packet with soruce addr and tag id and time %lld\n", time_us);
 	//memcpy(packet->lap_time, &time_us, sizeof(struct timeval));
 	packet.lap_time = time_us;
 	xQueueSend(tag_q, &packet, portMAX_DELAY);

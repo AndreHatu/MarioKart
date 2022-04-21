@@ -82,7 +82,8 @@ typedef struct __attribute__((packed)) {
 } active_mod_packet;
 
 typedef struct __attribute__((packed)) {
-	uint64_t start_time;
+	uint64_t car1_start_time;
+	uint64_t car2_start_time;
 	uint8_t user_num;
 	uint8_t lap_num;
 } Start_pack;
