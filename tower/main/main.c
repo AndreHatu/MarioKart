@@ -19,6 +19,8 @@
 #include "../../config/mario_kart_config.h"
 #include "display.h"
 
+#define NCHECKPOINTS 4
+
 static xQueueHandle recv_q;
 static xQueueHandle modifier_q;
 
@@ -29,10 +31,14 @@ char value[4]; // buffer to copy the value of a certain key
 int current_time;
 int start_time;
 
-Car_Status Car1_status = { .checkpoint = 0, .lap_min = 0, .lap_sec = 0, .lap_ms = 0, .curr_lap = 0 };
-Car_Status Car2_status = { .checkpoint = 0, .lap_min = 0, .lap_sec = 0, .lap_ms = 0, .curr_lap = 0 };
+// Car_Status Car1_status = { .checkpoint = 0, .lap_min = 0, .lap_sec = 0, .lap_ms = 0, .curr_lap = 0 };
+// Car_Status Car2_status = { .checkpoint = 0, .lap_min = 0, .lap_sec = 0, .lap_ms = 0, .curr_lap = 0 };
+const uint8_t car1_mac[MAC_LEN] = CAR1_MAC_ADDR;
+const uint8_t car2_mac[MAC_LEN] = CAR2_MAC_ADDR;
 
-Start_pack Start_information = { .time_now = 0, .user_num = 0, .lap_num = 0 };
+Start_pack Start_information = { .start_time = 0, .user_num = 0, .lap_num = 0 };
+
+Race race;
 
 int64_t millis() {
 	struct timeval tv;
@@ -41,13 +47,31 @@ int64_t millis() {
 }
 
 
-void set_start_time(int8_t user, int8_t lap){
+// void set_start_time(int8_t user, int8_t lap){
+// 	start_time = millis();
+// 	Start_information.start_time = start_time;
+//     Start_information.lap_num = lap;
+// 	Start_information.user_num = user;
+// }
+
+// call this function whenever the user clicks the "start" button on screen
+// initializes the race struct which contains information on lap
+void start_race(int8_t user, int8_t lap){
 	start_time = millis();
-	Start_information.time_now = start_time;
+	Start_information.start_time = start_time;
     Start_information.lap_num = lap;
 	Start_information.user_num = user;
-}
 
+	race.car1.checkpoint = 1;
+	race.car1.curr_lap = 1;
+	race.car1_times = malloc(sizeof(uint64_t) * NCHECKPOINTS * Start_information.lap_num + 1);
+	if(user > 1){
+		race.car2.checkpoint = 1;
+		race.car2.curr_lap = 1;
+		race.car2_times = malloc(sizeof(uint64_t) * NCHECKPOINTS * Start_information.lap_num + 1);
+	}
+
+}
 
 uint8_t random_modifier(){
 	//return values: 
@@ -59,6 +83,38 @@ uint8_t random_modifier(){
 	return 0;
 }
 
+void update_checkpoint(uint8_t car_id, uint8_t checkpoint, uint64_t time){
+	switch(car_id){
+		case 1: 
+			if((race.car1.checkpoint + 1) % NCHECKPOINTS == checkpoint){  // correct checkpoint, update
+				if(checkpoint == 1){  // if first checkpoint, means car has lapped
+									  // note that checkpoints count starting from 1 to NCHECKPOINTS
+					race.car1.curr_lap++;
+				}
+				race.car1.checkpoint = checkpoint;
+				race.car1_times[checkpoint * race.car1.curr_lap] = time;
+				int64_t lap_time = time - Start_information.start_time;
+				race.car1.lap_min = lap_time/6000;
+				race.car1.lap_sec = (lap_time%6000)/100;
+				race.car1.lap_ms = lap_time%6100;
+			}
+			break;
+		case 2:
+			if((race.car2.checkpoint + 1) % NCHECKPOINTS == checkpoint){  // correct checkpoint, update
+				if(checkpoint == 1){
+					race.car2.curr_lap++;
+				}
+				race.car2.checkpoint = checkpoint;
+				race.car2_times[checkpoint * race.car2.curr_lap] = time;
+				int64_t lap_time = time - Start_information.start_time;
+				race.car2.lap_min = lap_time/6000;
+				race.car2.lap_sec = (lap_time%6000)/100;
+				race.car2.lap_ms = lap_time%6100;
+			}
+			break;
+	}
+}
+
 // assign random modifier based on tag or mark checkpoint
 void tag_handler(tag_packet packet){
 	//print the tag id
@@ -66,25 +122,25 @@ void tag_handler(tag_packet packet){
 	
 	//Figure out which car sent the tag packet (to update car status)
 	Car_Status my_car;
-	//uint8_t car1[MAC_LEN] = CAR1_MAC_ADDR;
-	uint8_t car1[MAC_LEN] = CAR1_MAC_ADDR;
-	uint8_t car2[MAC_LEN] = CAR2_MAC_ADDR;
-	uint8_t other_car[MAC_LEN];
+	uint8_t other_car[MAC_LEN]; // = (car1_mac==packet.src_mac) ? car2_mac : car1_mac;
 	uint8_t car_id;
 
-	if (strcmp((char*)(car1), (char*)(packet.src_mac)) == 0){
-		memcpy(&other_car, car2, MAC_LEN);
-		my_car = Car1_status;
+	if (car1_mac==packet.src_mac){
+		memcpy(&other_car, car2_mac, MAC_LEN);
+		my_car = race.car1;
 		car_id = 1;
 	}
 	else{
-		memcpy(&other_car, car2, MAC_LEN);	
-		my_car = Car2_status;	
+		memcpy(&other_car, car1_mac, MAC_LEN);	
+		my_car = race.car2;	
 		car_id = 2;
 	}
-	uint8_t id[TAG_LEN];
-	memcpy(id, packet.tag_id, TAG_LEN);
+	
 
+	uint8_t id[TAG_LEN + 1];
+	id[TAG_LEN] = '\0';
+	memcpy(id, packet.tag_id, TAG_LEN);
+	// format tag so it fits within strmap constraints
 	for (int i = 0; i < TAG_LEN; i++){
 		if (id[i] > 0x7f){
 			id[i] %= 0x7f;
@@ -93,56 +149,49 @@ void tag_handler(tag_packet packet){
 			id[i] += 0x20;
 		}
 	}
+	printf("%s\n", id);
 	//Figure out whether tag is checkpoint or modifier
-	char str[TAG_LEN+1];
-	//size_t bufflen = sizeof(packet.tag_id);
-    memcpy( str, id, TAG_LEN );
-    str[TAG_LEN] = '\0'; // 'str' is now a string
-	printf("%s\n", str);
-
-	int result = sm_get(sm, str, value, sizeof(value));
+	int result = sm_get(sm, (char*)id, value, sizeof(value));
 	if (result == 0){	//if tag id sent is not saved in the map
 		printf("key not found\n");
 		return;
 	}
 
-
+	// craft return packet according to whether it is a modifier or a checkpoint
 	if (value[0] == 'M'){
 			uint8_t mod = random_modifier(); // get random modifier
 			printf("%02x\n", mod);
 			//setup send packet
-			modifier_packet* new_packet = malloc(sizeof(modifier_packet));
-			new_packet->modifier = mod;
-
-			//if powerup, send back to sender address, if not, send to the other car
-			memcpy(&(new_packet->target_mac_addr), packet.src_mac, MAC_LEN);
+			modifier_packet new_packet; 
+			new_packet.modifier = mod;
+			// send it back to original car
+			memcpy(new_packet.target_mac_addr, packet.src_mac, MAC_LEN);
 			
 			//add packet to queue
-			if(xQueueSend(modifier_q, new_packet, portMAX_DELAY) != pdTRUE){
+			if(xQueueSend(modifier_q, &new_packet, portMAX_DELAY) != pdTRUE){
 				ESP_LOGW("Tower", "Modifier Queue Full");
 			}
-			free(new_packet);
+			// free(new_packet);
 			printf("Modifier Send Success\n");
 	}
 			
 	else if (value[0] == 'C'){
 			//figure out which car status to modify
-			printf("startTime: %ld, packet laptime: %ld\n", (long)Start_information.time_now, (long)packet.lap_time);
+			printf("startTime: %ld, packet laptime: %ld\n", (long)Start_information.start_time, (long)packet.lap_time);
 			printf("current checkpoint: %02x, lap time:%d:%d:%d \n", my_car.checkpoint, my_car.lap_min, my_car.lap_sec, my_car.lap_ms);
-			int val = value[1] - '0';
-			int64_t lap_time = packet.lap_time - Start_information.time_now;
-			my_car.lap_min = lap_time/6000;
-			my_car.lap_sec = (lap_time%6000)/100;
-			my_car.lap_ms = lap_time%6100;
-			if (val == (my_car.checkpoint%5)){
-				//my_car.lap_time += packet.lap_time;
-				my_car.checkpoint++;
-				if (my_car.checkpoint >= 5){
-					my_car.checkpoint %= 5;
-					my_car.curr_lap += 1;
-				}
-				// update_status(car_id, my_car.checkpoint, my_car.lap_time, my_car.curr_lap);
-			}
+			uint8_t checkpoint = value[1] - '0' + 1; // add 1 to make checkpoint counting start from 1
+			update_checkpoint(car_id, checkpoint, packet.lap_time);
+
+			// if (val == (my_car.checkpoint%5)){
+			// 	//my_car.lap_time += packet.lap_time;
+			// 	my_car.checkpoint++;
+			// 	if (my_car.checkpoint >= 5){
+			// 		my_car.checkpoint %= 5;
+			// 		my_car.curr_lap += 1;
+			// 	}
+			// 	update_checkpoint(car_id, my_car.checkpoint, packet.lap_time);
+			// 	// update_status(car_id, my_car.checkpoint, my_car.lap_time, my_car.curr_lap);
+			// }
 			printf("new checkpoint: %02x, lap time:%d:%d:%d \n", my_car.checkpoint, my_car.lap_min, my_car.lap_sec, my_car.lap_ms);
 			//update lap status
 			printf("check point read\n");
@@ -164,14 +213,14 @@ static void queue_process_task(void *p)
 	if (!start_game){
 		taskYIELD();
 	}
-    tag_packet* recv_packet = malloc(sizeof(tag_packet));
+    tag_packet recv_packet;// = malloc(sizeof(tag_packet));
 
     ESP_LOGI("Tower", "Listening");
     for(;;)
     {
-        if(xQueueReceive(recv_q, recv_packet, portMAX_DELAY) == pdTRUE)
+        if(xQueueReceive(recv_q, &recv_packet, portMAX_DELAY) == pdTRUE)
         {
-			tag_handler(*recv_packet);
+			tag_handler(recv_packet);
         }
 		else{
 			taskYIELD();
@@ -302,19 +351,19 @@ void initialize_hash(){
 	sm_put(sm, ")$6|e", "M");
 	sm_put(sm, ")$%rZ", "M");
 
-	//stack 2
-	sm_put(sm, ")$=N\\", "C0");
-	sm_put(sm, ")$8lY", "C0");
-	sm_put(sm, ")$/$", "C0");
-	sm_put(sm, ")$x;P", "C0");
-	sm_put(sm, ")$ 8+", "C0");
-	sm_put(sm, ")$Jm(", "C0");
-	sm_put(sm, ")$C/A", "C0");
-	sm_put(sm, ")$+Vt", "C0");
-	sm_put(sm, ")$c,d", "C0");
-	sm_put(sm, ")$=l^", "C0");
+	// //stack 2
+	// sm_put(sm, ")$=N\\", "C0");
+	// sm_put(sm, ")$8lY", "C0");
+	// sm_put(sm, ")$/$", "C0");
+	// sm_put(sm, ")$x;P", "C0");
+	// sm_put(sm, ")$ 8+", "C0");
+	// sm_put(sm, ")$Jm(", "C0");
+	// sm_put(sm, ")$C/A", "C0");
+	// sm_put(sm, ")$+Vt", "C0");
+	// sm_put(sm, ")$c,d", "C0");
+	// sm_put(sm, ")$=l^", "C0");
 	
-	//stack 3
+	// //stack 3
 	sm_put(sm, ")$>`Q", "M");
 	sm_put(sm, ")$w \\", "M");
 	sm_put(sm, ")$?8*", "M");
@@ -336,7 +385,7 @@ void initialize_hash(){
 
 	// Checkpoint 3
 	sm_put(sm, ")$28+", "C3");
-	sm_put(sm, ")$93'", "C3");
+	sm_put(sm, ")$93\'", "C3");
 	sm_put(sm, ")$>2#", "C3");
 	sm_put(sm, ")$zW\"", "C3");
 
@@ -371,10 +420,7 @@ void app_main(void) {
 	xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 2, NULL);
 
 	display_init();
-	//display_menu();
-	//display_test();
-	//display_button(WHITE);
+
 	//xTaskCreate(touch_task, "handle_touches", 2048, NULL, 2, NULL);
 	xTaskCreate(task_menu, "handle_touches", 2048, NULL, 2, NULL);
-	//race_display();
 }
