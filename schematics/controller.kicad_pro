@@ -374,7 +374,7 @@
       "idf": "",
       "netlist": "controller.net",
       "specctra_dsn": "",
-      "step": "",
+      "step": "controller.step",
       "vrml": ""
     },
     "page_layout_descr_file": ""
