@@ -23,6 +23,7 @@ extern Race race;
 
 // void update_status(uint8_t car_id, uint8_t checkpoint, int64_t lap_time, int32_t curr_lap);
 extern void start_race(int8_t user, int8_t lap);
+extern void reset_race_stat(int8_t userNum);
 void display_init();
 void menu_display();
 void display_counter();

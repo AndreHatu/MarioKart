@@ -311,15 +311,18 @@ void race_display(){
 
     // itoa(race.car1.lap_min, &number, 10);
     EVE_cmd_number_burst(200, divider, 30, 0, race.car1.lap_min);
-    EVE_cmd_text_burst(260, divider, 30, 0, ":");
+    EVE_cmd_text_burst(240, divider, 30, 0, ":");
     // itoa(race.car1.lap_sec, &number, 10);
-    EVE_cmd_number_burst(270, divider, 30, 0, race.car1.lap_sec);
-    EVE_cmd_text_burst(210, divider, 30, 0, ":");
+    EVE_cmd_number_burst(250, divider, 30, 0, race.car1.lap_sec);
+    EVE_cmd_text_burst(290, divider, 30, 0, ":");
     // itoa(race.car1.lap_ms, &number, 10);
-    EVE_cmd_number_burst(320, divider, 30, 0, race.car1.lap_ms);
+    EVE_cmd_number_burst(300, divider, 30, 0, race.car1.lap_ms);
 
     // itoa(race.car1.checkpoint, &number, 10);
-    EVE_cmd_number_burst(400, divider, 30, 0, race.car1.checkpoint);
+    int nextchckpoint = race.car2.checkpoint % 5;
+    if (nextchckpoint == 0)
+        nextchckpoint += 1;
+    EVE_cmd_number_burst(400, divider, 30, 0, nextchckpoint);
 
     //Car 2 status
     if(userNum > 1){
@@ -337,15 +340,18 @@ void race_display(){
 
         // itoa(race.car2.lap_min, &number, 10);
         EVE_cmd_number_burst(200, divider, 30, 0, race.car2.lap_min);
-        EVE_cmd_text_burst(260, divider, 30, 0, ":");
+        EVE_cmd_text_burst(240, divider, 30, 0, ":");
         // itoa(race.car2.lap_sec, &number, 10);
-        EVE_cmd_number_burst(270, divider, 30, 0, race.car2.lap_sec);
+        EVE_cmd_number_burst(250, divider, 30, 0, race.car2.lap_sec);
         EVE_cmd_text_burst(290, divider, 30, 0, ":");
         // itoa(race.car2.lap_ms, &number, 10);
-        EVE_cmd_number_burst(320, divider, 30, 0, race.car2.lap_ms);
+        EVE_cmd_number_burst(300, divider, 30, 0, race.car2.lap_ms);
 
         // itoa(race.car2.checkpoint, &number, 10);
-        EVE_cmd_number_burst(400, divider, 30, 0, race.car2.checkpoint);
+        int nextchckpoint = race.car2.checkpoint % 5;
+        if (nextchckpoint == 0)
+            nextchckpoint += 1;
+        EVE_cmd_number_burst(400, divider, 30, 0,nextchckpoint);
     }
 
     EVE_cmd_dl_burst(TAG(11));
@@ -402,6 +408,7 @@ void task_menu(void* args){
                         break;
                     case 11:// cancel race
                         game_active = false;
+                        reset_race_stat(userNum);
                         //display_countdown(0);
                         break;
                     default: 
