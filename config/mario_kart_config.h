@@ -27,6 +27,8 @@ typedef struct __attribute__((packed)) {
 	uint8_t lap_ms;
 	uint8_t lap_sec;
 	uint32_t lap_min;
+	bool race_end;
+	bool win;
 } Car_Status;
 
 // struct to hold checkpoint times during a race

@@ -237,6 +237,7 @@ void menu_display(){
 void race_display(){
     // ESP_LOGI("Tower", "In race_display");
     uint16_t divider = LAYOUT_Y1;
+    bool end = true;
     char number[4];
     EVE_start_cmd_burst(); /* start writing to the cmd-fifo as one stream of bytes, only sending the address once */
     EVE_cmd_dl_burst(CMD_DLSTART); /* start the display list */
@@ -311,15 +312,22 @@ void race_display(){
 
     // itoa(race.car1.lap_min, &number, 10);
     EVE_cmd_number_burst(200, divider, 30, 0, race.car1.lap_min);
-    EVE_cmd_text_burst(260, divider, 30, 0, ":");
+    EVE_cmd_text_burst(240, divider, 30, 0, ":");
     // itoa(race.car1.lap_sec, &number, 10);
-    EVE_cmd_number_burst(270, divider, 30, 0, race.car1.lap_sec);
-    EVE_cmd_text_burst(210, divider, 30, 0, ":");
+    EVE_cmd_number_burst(250, divider, 30, 0, race.car1.lap_sec);
+    EVE_cmd_text_burst(290, divider, 30, 0, ":");
     // itoa(race.car1.lap_ms, &number, 10);
-    EVE_cmd_number_burst(320, divider, 30, 0, race.car1.lap_ms);
+    EVE_cmd_number_burst(300, divider, 30, 0, race.car1.lap_ms);
 
     // itoa(race.car1.checkpoint, &number, 10);
-    EVE_cmd_number_burst(400, divider, 30, 0, race.car1.checkpoint);
+    int nextchckpoint = (race.car1.checkpoint+1) % 6;
+    if (nextchckpoint == 0)
+        nextchckpoint = 1;
+    EVE_cmd_number_burst(400, divider, 30, 0, nextchckpoint);
+    if (race.car1.win){
+        EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
+    }
+    end &= race.car1.race_end;
 
     //Car 2 status
     if(userNum > 1){
@@ -337,15 +345,28 @@ void race_display(){
 
         // itoa(race.car2.lap_min, &number, 10);
         EVE_cmd_number_burst(200, divider, 30, 0, race.car2.lap_min);
-        EVE_cmd_text_burst(260, divider, 30, 0, ":");
+        EVE_cmd_text_burst(240, divider, 30, 0, ":");
         // itoa(race.car2.lap_sec, &number, 10);
-        EVE_cmd_number_burst(270, divider, 30, 0, race.car2.lap_sec);
+        EVE_cmd_number_burst(250, divider, 30, 0, race.car2.lap_sec);
         EVE_cmd_text_burst(290, divider, 30, 0, ":");
         // itoa(race.car2.lap_ms, &number, 10);
-        EVE_cmd_number_burst(320, divider, 30, 0, race.car2.lap_ms);
+        EVE_cmd_number_burst(300, divider, 30, 0, race.car2.lap_ms);
 
         // itoa(race.car2.checkpoint, &number, 10);
-        EVE_cmd_number_burst(400, divider, 30, 0, race.car2.checkpoint);
+        int nextchckpoint = (race.car2.checkpoint+1) % 6;
+        if (nextchckpoint == 0)
+            nextchckpoint = 1;
+        EVE_cmd_number_burst(400, divider, 30, 0,nextchckpoint);
+        if (race.car2.win){
+            EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
+        }
+        end &= race.car2.race_end;
+    }
+
+    if (end){
+        EVE_cmd_text_burst(300, 300, 30, 0, "RACE END!");
+        EVE_cmd_dl_burst(TAG(11));
+        EVE_cmd_button_burst(300, 350, 300, 60, 30, 0, "GO BACK TO MENU");
     }
 
     EVE_cmd_dl_burst(TAG(11));
@@ -402,6 +423,7 @@ void task_menu(void* args){
                         break;
                     case 11:// cancel race
                         game_active = false;
+                        reset_race_stat(userNum);
                         //display_countdown(0);
                         break;
                     default: 
