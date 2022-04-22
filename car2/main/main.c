@@ -50,8 +50,7 @@ int current_time;
 int64_t millis() {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	//return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
-	return (tv.tv_sec * 100LL + (tv.tv_usec / 10000LL));
+	return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
 }
 
 void print_packet(controls_packet packet, bool rev){
@@ -77,15 +76,15 @@ void print_packet(controls_packet packet, bool rev){
 
 static void tag_queue_send_task(void *p) // sending rfid tag info to central tower
 {
-	tag_packet* packet = malloc(sizeof(tag_packet));
+	tag_packet packet;// = malloc(sizeof(tag_packet));
 	const uint8_t DEST_MAC[] = TOWER; // TOWER_MAC_ADDR, changed for testing
 	esp_err_t err;
 	while(1)
 	{
 		ESP_LOGI("Car", "Trying to send packet to tower");
-		if (xQueueReceive(tag_q, packet, portMAX_DELAY) == pdTRUE){
+		if (xQueueReceive(tag_q, &packet, portMAX_DELAY) == pdTRUE){
 			ESP_LOGI("Car", "Sending packet to tower");
-			if((err = esp_now_send(DEST_MAC, (uint8_t*)packet, sizeof(tag_packet))) != ESP_OK){
+			if((err = esp_now_send(DEST_MAC, (uint8_t*)&packet, sizeof(tag_packet))) != ESP_OK){
 				ESP_LOGE("Car", "Error sending packet to tower");
 				printf("Error: %x\n", err);
 			}
@@ -108,7 +107,7 @@ static void ctrl_queue_process_task(void *p)
 			print_packet(recv_packet,rev);
 			if (mod_flag){
 				current_time = millis();
-				if (current_time - start_time >= 300){
+				if (current_time - start_time >= 3000){
 					printf("Back to normal state\n");
 					//printf("start time %d current time %d", start_time, current_time);
 					brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, V0);
@@ -120,11 +119,11 @@ static void ctrl_queue_process_task(void *p)
 			// User click modifier button
 			else if (recv_packet.mod == true){
 				printf("mod = 1\n");
-				modifier_packet* mod_pack = malloc(sizeof(modifier_packet));
-				if (xQueueReceive(mod_q, mod_pack, 0) ==pdTRUE){
+				modifier_packet mod_pack;// = malloc(sizeof(modifier_packet));
+				if (xQueueReceive(mod_q, &mod_pack, 0) ==pdTRUE){
 					printf("have something in mod queue\n");
-					if (mod_pack->modifier == 0){
-						start_time = millis();
+					if (mod_pack.modifier == 0){
+						start_time = millis()-1500;
 						//current_time = start_time;
 						printf("modifier: power up\n");
 						brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, VSPEED);
@@ -134,15 +133,14 @@ static void ctrl_queue_process_task(void *p)
 					{
 						//printf("modifier: something else\n");
 
-						active_mod_packet* act_pack = malloc(sizeof(active_mod_packet));
-						act_pack->modifier = mod_pack->modifier;
+						active_mod_packet act_pack;// = malloc(sizeof(active_mod_packet));
+						act_pack.modifier = mod_pack.modifier;
 						esp_err_t err;
 						const uint8_t DEST_MAC[MAC_LEN] = ANOTHER_CAR;
-						if((err = esp_now_send(DEST_MAC, (uint8_t*)act_pack, sizeof(active_mod_packet))) != ESP_OK){
+						if((err = esp_now_send(DEST_MAC, (uint8_t*)&act_pack, sizeof(active_mod_packet))) != ESP_OK){
 							ESP_LOGE("Car", "Error sending packet to tower");
 							printf("Error: %x\n", err);
 						}
-						free(act_pack);
 						start_time = millis();
 						mod_flag = 1;
 					}
@@ -150,7 +148,6 @@ static void ctrl_queue_process_task(void *p)
 				else{
 					ESP_LOGI("car", "No Modifier Available");
 				}
-				free(mod_pack);
 			}
         }        
     }
@@ -190,7 +187,7 @@ static void active_mod_queue_process_task(void *p)
             // print_packet(recv_packet);
 			printf("Received Active modifier: %02x\n", active_packet.modifier);
 			if (active_packet.modifier == 1){
-				start_time = millis();
+				start_time = millis()-1500;
 				//current_time = start_time;
 				printf("modifier: power down\n");
 				brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, VSLOW);
@@ -206,7 +203,7 @@ static void active_mod_queue_process_task(void *p)
 			}
 						
 			else if (active_packet.modifier == 3){
-				start_time = millis()-2000;
+				start_time = millis()-2800;
 				//current_time = start_time;
 				printf("modifier: stop control\n");
 				brushed_motor_stop(MCPWM_UNIT_0, MCPWM_TIMER_0);
@@ -322,20 +319,18 @@ void tag_handler(uint8_t* serial_no){
 	gpio_set_level(5, 0);
 
 	//time when car run over tag
-	struct timeval tv_now;
-	gettimeofday(&tv_now, NULL);
-	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
 
-	tag_packet* packet = malloc(sizeof(tag_packet));
+	int64_t time_us = millis();
+
+	tag_packet packet;// = malloc(sizeof(tag_packet));
 	const uint8_t SRC_MAC[MAC_LEN] = MY_CAR;  // NOTE: must make it so we can choose car/ctrl 1 and 2
-	memcpy(packet->src_mac, SRC_MAC, MAC_LEN);
-	memcpy(packet->tag_id, serial_no, TAG_LEN); // read data from tag reader module
+	memcpy(&(packet.src_mac), SRC_MAC, MAC_LEN);
+	memcpy(&(packet.tag_id), serial_no, TAG_LEN); // read data from tag reader module
 
-	printf("packet with soruce addr and tag id\n");
+	printf("packet with soruce addr and tag id and time %lld\n", time_us);
 	//memcpy(packet->lap_time, &time_us, sizeof(struct timeval));
-	packet->lap_time = time_us;
-	xQueueSend(tag_q, packet, portMAX_DELAY);
-	free(packet);
+	packet.lap_time = time_us;
+	xQueueSend(tag_q, &packet, portMAX_DELAY);
 }
 
 
