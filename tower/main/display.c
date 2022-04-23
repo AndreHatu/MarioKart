@@ -371,7 +371,7 @@ void race_display(){
             EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
         }
         else{
-            switch(race.car1.modifier){
+            switch(race.car2.modifier){
                 case 0:  EVE_cmd_text_burst(600, divider, 30, 0, "Speed-up"); break;
                 case 1:  EVE_cmd_text_burst(600, divider, 30, 0, "Slow opponents"); break;
                 case 2:  EVE_cmd_text_burst(600, divider, 30, 0, "Confuse opponents"); break;

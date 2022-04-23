@@ -122,15 +122,15 @@ static void ctrl_queue_process_task(void *p)
 				modifier_packet mod_pack;// = malloc(sizeof(modifier_packet));
 				used_mod_packet used_mod;
 				esp_err_t err;
-				used_mod.modifier = mod_pack.modifier;
-				const uint8_t TOWER_MAC[MAC_LEN] = TOWER_MAC_ADDR;
-				if((err = esp_now_send(TOWER_MAC, (uint8_t*)&used_mod, sizeof(used_mod_packet))) != ESP_OK){
-					ESP_LOGE("Car", "Error sending packet to tower");
-					printf("Error: %x\n", err);
-				}
 
 				if (xQueueReceive(mod_q, &mod_pack, 0) == pdTRUE){
 					printf("have something in mod queue\n");
+					used_mod.modifier = mod_pack.modifier;
+					const uint8_t TOWER_MAC[MAC_LEN] = TOWER_MAC_ADDR;
+					if((err = esp_now_send(TOWER_MAC, (uint8_t*)&used_mod, sizeof(used_mod_packet))) != ESP_OK){
+						ESP_LOGE("Car", "Error sending packet to tower");
+						printf("Error: %x\n", err);
+					}
 					if (mod_pack.modifier == 0){
 						start_time = millis();
 						//current_time = start_time;
