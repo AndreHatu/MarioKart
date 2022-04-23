@@ -206,7 +206,7 @@ void tag_handler(tag_packet packet){
 	//Figure out which car sent the tag packet (to update car status)
 	uint8_t car_id;
 	printf("Received mac addr: %02x %02x %02x %02x %02x %02x\n", packet.src_mac[0], packet.src_mac[1], packet.src_mac[2], packet.src_mac[3], packet.src_mac[4], packet.src_mac[5]);
-	if (packet.src_mac[0] == 0x1c){
+	if (packet.src_mac[0] == CAR1_MAC_ADDR[0]){
 		car_id = 1;
 	}
 	else {
