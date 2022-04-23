@@ -29,6 +29,7 @@ typedef struct __attribute__((packed)) {
 	uint32_t lap_min;
 	bool race_end;
 	bool win;
+	uint8_t modifier;
 } Car_Status;
 
 // struct to hold checkpoint times during a race
@@ -82,6 +83,10 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
 	uint8_t modifier;
 } active_mod_packet;
+
+typedef struct __attribute__((packed)) {
+	uint8_t modifier;
+} used_mod_packet;
 
 typedef struct __attribute__((packed)) {
 	uint64_t car1_start_time;

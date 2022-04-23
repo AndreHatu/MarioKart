@@ -278,7 +278,8 @@ void race_display(){
     EVE_cmd_text_burst(0, LAYOUT_Y1, 30, 0, "Player");
     EVE_cmd_text_burst(100, LAYOUT_Y1, 30, 0, "Laps");
     EVE_cmd_text_burst(200, LAYOUT_Y1, 30, 0, "Lap Time");
-    EVE_cmd_text_burst(400, LAYOUT_Y1, 30, 0, "Next Checkpoint");
+    EVE_cmd_text_burst(350, LAYOUT_Y1, 30, 0, "Next Checkpoint");
+    EVE_cmd_text_burst(600, LAYOUT_Y1, 30, 0, "Modifier");
    // while(EVE_busy()) {};
 
     // for(int i = 0; i < userNum; i++){
@@ -327,6 +328,15 @@ void race_display(){
     if (race.car1.win){
         EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
     }
+    else{
+        switch(race.car1.modifier){
+            case 0:  EVE_cmd_text_burst(600, divider, 30, 0, "Speed-up"); break;
+            case 1:  EVE_cmd_text_burst(600, divider, 30, 0, "Slow opponents"); break;
+            case 2:  EVE_cmd_text_burst(600, divider, 30, 0, "Confuse opponents"); break;
+            case 3:  EVE_cmd_text_burst(600, divider, 30, 0, "Stop opponents"); break;
+            default: break;
+        }
+    }
     end &= race.car1.race_end;
 
     //Car 2 status
@@ -359,6 +369,15 @@ void race_display(){
         EVE_cmd_number_burst(400, divider, 30, 0,nextchckpoint);
         if (race.car2.win){
             EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
+        }
+        else{
+            switch(race.car1.modifier){
+                case 0:  EVE_cmd_text_burst(600, divider, 30, 0, "Speed-up"); break;
+                case 1:  EVE_cmd_text_burst(600, divider, 30, 0, "Slow opponents"); break;
+                case 2:  EVE_cmd_text_burst(600, divider, 30, 0, "Confuse opponents"); break;
+                case 3:  EVE_cmd_text_burst(600, divider, 30, 0, "Stop opponents"); break;
+                default: break;
+            }
         }
         end &= race.car2.race_end;
     }
