@@ -50,7 +50,6 @@ int current_time;
 int64_t millis() {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	//return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
 	return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
 }
 
@@ -108,7 +107,7 @@ static void ctrl_queue_process_task(void *p)
 			print_packet(recv_packet,rev);
 			if (mod_flag){
 				current_time = millis();
-				if (current_time - start_time >= 1500){
+				if (current_time - start_time >= 3000){
 					printf("Back to normal state\n");
 					//printf("start time %d current time %d", start_time, current_time);
 					brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, V0);
@@ -133,7 +132,7 @@ static void ctrl_queue_process_task(void *p)
 						printf("Error: %x\n", err);
 					}
 					if (mod_pack.modifier == 0){
-						start_time = millis();
+						start_time = millis()-1500;
 						//current_time = start_time;
 						printf("modifier: power up\n");
 						brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, VSPEED);
@@ -143,7 +142,7 @@ static void ctrl_queue_process_task(void *p)
 					{
 						//printf("modifier: something else\n");
 
-						active_mod_packet act_pack; // = malloc(sizeof(active_mod_packet));
+						active_mod_packet act_pack;// = malloc(sizeof(active_mod_packet));
 						act_pack.modifier = mod_pack.modifier;
 						esp_err_t err;
 						const uint8_t DEST_MAC[MAC_LEN] = ANOTHER_CAR;
@@ -197,7 +196,7 @@ static void active_mod_queue_process_task(void *p)
             // print_packet(recv_packet);
 			printf("Received Active modifier: %02x\n", active_packet.modifier);
 			if (active_packet.modifier == 1){
-				start_time = millis();
+				start_time = millis()-1500;
 				//current_time = start_time;
 				printf("modifier: power down\n");
 				brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, VSLOW);
@@ -213,7 +212,7 @@ static void active_mod_queue_process_task(void *p)
 			}
 						
 			else if (active_packet.modifier == 3){
-				start_time = millis()-2000;
+				start_time = millis()-2800;
 				//current_time = start_time;
 				printf("modifier: stop control\n");
 				brushed_motor_stop(MCPWM_UNIT_0, MCPWM_TIMER_0);
@@ -329,6 +328,7 @@ void tag_handler(uint8_t* serial_no){
 	gpio_set_level(5, 0);
 
 	//time when car run over tag
+
 	int64_t time_us = millis();
 
 	tag_packet packet;// = malloc(sizeof(tag_packet));

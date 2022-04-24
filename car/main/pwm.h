@@ -13,7 +13,7 @@
 #define GPIO_PWM0A_OUT 32   //Set GPIO 15 as PWM0A
 #define GPIO_PWM0B_OUT 26  //Set GPIO 17 as PWM0B
 #define V0 75.0
-#define VFRONT 100.0
+#define VFRONT 95.0
 #define VSPEED 100.0
 #define VSLOW 60.0
 
