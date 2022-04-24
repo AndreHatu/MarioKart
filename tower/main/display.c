@@ -309,7 +309,7 @@ void race_display(){
     EVE_cmd_text_burst(0, divider, 30, 0, "Car 1");
     // itoa(race.car1.curr_lap, &number, 10);
     EVE_cmd_number_burst(100, divider, 30, 0, race.car1.curr_lap);
-    EVE_cmd_text_burst(115, divider, 30, 0, "/5");
+    // EVE_cmd_text_burst(115, divider, 30, 0, "/4");
 
     // itoa(race.car1.lap_min, &number, 10);
     EVE_cmd_number_burst(200, divider, 30, 0, race.car1.lap_min);
@@ -321,9 +321,9 @@ void race_display(){
     EVE_cmd_number_burst(300, divider, 30, 0, race.car1.lap_ms);
 
     // itoa(race.car1.checkpoint, &number, 10);
-    int nextchckpoint = (race.car1.checkpoint+1) % 6;
-    if (nextchckpoint == 0)
-        nextchckpoint = 1;
+    int nextchckpoint = (race.car1.checkpoint+1) % 5;
+    // if (nextchckpoint == 0)
+    //     nextchckpoint = 1;
     EVE_cmd_number_burst(400, divider, 30, 0, nextchckpoint);
     if (race.car1.win){
         EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
@@ -351,7 +351,7 @@ void race_display(){
         EVE_cmd_text_burst(0, divider, 30, 0, "Car 2");
         // itoa(race.car2.curr_lap, &number, 10);
         EVE_cmd_number_burst(100, divider, 30, 0, race.car2.curr_lap);
-        EVE_cmd_text_burst(115, divider, 30, 0, "/5");
+        
 
         // itoa(race.car2.lap_min, &number, 10);
         EVE_cmd_number_burst(200, divider, 30, 0, race.car2.lap_min);
@@ -363,14 +363,15 @@ void race_display(){
         EVE_cmd_number_burst(300, divider, 30, 0, race.car2.lap_ms);
 
         // itoa(race.car2.checkpoint, &number, 10);
-        int nextchckpoint = (race.car2.checkpoint+1) % 6;
-        if (nextchckpoint == 0)
-            nextchckpoint = 1;
+        int nextchckpoint = (race.car2.checkpoint+1) % 5;
+        // if (nextchckpoint == 0)
+        //     nextchckpoint = 1;
         EVE_cmd_number_burst(400, divider, 30, 0,nextchckpoint);
         if (race.car2.win){
             EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
         }
         else{
+
             switch(race.car2.modifier){
                 case 0:  EVE_cmd_text_burst(600, divider, 30, 0, "Speed-up"); break;
                 case 1:  EVE_cmd_text_burst(600, divider, 30, 0, "Slow opponents"); break;

@@ -73,8 +73,8 @@ void start_race(int8_t user, int8_t lap){
 	Start_information.user_num = user;
 
 	race.car1.checkpoint = 0;
-	race.car1.curr_lap = 1;
-	race.car1_times = malloc(sizeof(uint64_t) * NCHECKPOINTS * Start_information.lap_num + 1);
+	race.car1.curr_lap = 0;
+	race.car1_times = malloc(sizeof(uint64_t) * (NCHECKPOINTS+1) * Start_information.lap_num + 1);
 	race.car1.lap_min = 0;
 	race.car1.lap_sec = 0;
 	race.car1.lap_ms = 0;
@@ -83,8 +83,8 @@ void start_race(int8_t user, int8_t lap){
 	race.car1.modifier = 5;
 	if(user > 1){
 		race.car2.checkpoint = 0;
-		race.car2.curr_lap = 1;
-		race.car2_times = malloc(sizeof(uint64_t) * NCHECKPOINTS * Start_information.lap_num + 1);
+		race.car2.curr_lap = 0;
+		race.car2_times = malloc(sizeof(uint64_t) * (NCHECKPOINTS+1) * Start_information.lap_num + 1);
 		race.car2.lap_min = 0;
 		race.car2.lap_sec = 0;
 		race.car2.lap_ms = 0;
@@ -111,37 +111,51 @@ void update_checkpoint(uint8_t car_id, uint8_t checkpoint, uint64_t time){
 	if (checkpoint == 0){
 		if(car_id == 1){
 			if (Start_information.car1_start_time == -1){
+				//uint64_t car1_start = millis() - start_time;
 				Start_information.car1_start_time = time;
+				race.car1_times[0] = 0;
+				race.car1.curr_lap+=1;
+				return;
 			}
 		}
 		else{
 			if (Start_information.car2_start_time == -1){
 				Start_information.car2_start_time = time;
+				race.car2_times[0] = 0;
+				race.car2.curr_lap+=1;
+				return;
 			}
 		}
-		return;
+		
 	}
+	int64_t lap_time = 0;
 	switch(car_id){
 		case 1: 
 			if (Start_information.car1_start_time == -1){
 				printf("You did not passed the start line!\n");
-				break;
+				return;
 			}
 			if (race.car1.race_end){
 				printf("[USER 1]RACE ALREADY ENDED\n");
-				break;
+				return;
 			}
 			printf("current checkpoint: %02x, lap time:%d:%d:%d \n", race.car1.checkpoint, race.car1.lap_min, race.car1.lap_sec, race.car1.lap_ms);
-			if((race.car1.checkpoint + 1) == checkpoint){  // correct checkpoint, update
-				if(checkpoint == 5){  // if first checkpoint, means car has lapped
-									  // note that checkpoints count starting from 1 to NCHECKPOINTS
-					race.car1.curr_lap++;
-					race.car1.checkpoint = 0;
-				}
+			if(((race.car1.checkpoint + 1) % (NCHECKPOINTS+1)) == checkpoint){  // correct checkpoint, update				
 				
-				race.car1.checkpoint = checkpoint;
-				race.car1_times[checkpoint + NCHECKPOINTS * (race.car2.curr_lap-1)] = time;
-				int64_t lap_time = time - Start_information.car1_start_time;
+				if(checkpoint == 0){  // if first checkpoint, means car has lapped
+										// note that checkpoints count starting from 1 to NCHECKPOINTS
+					race.car1.checkpoint = checkpoint;
+					
+					lap_time = time - Start_information.car1_start_time - race.car1_times[(NCHECKPOINTS+1)*(race.car1.curr_lap-1)];
+					race.car1.curr_lap+=1;
+					race.car1_times[checkpoint + (NCHECKPOINTS+1) * race.car1.curr_lap] = time;
+					//race.car1.checkpoint = 0;
+				}
+				else{
+					race.car1.checkpoint = checkpoint;
+					race.car1_times[checkpoint + (NCHECKPOINTS+1) * (race.car1.curr_lap-1)] = time;
+					lap_time = time - Start_information.car1_start_time - race.car1_times[(NCHECKPOINTS+1)*(race.car1.curr_lap-1)];
+				}
 				printf("time interval %lld\n", lap_time);
 				printf("time interval min %lld\n", lap_time/60000);
 				race.car1.lap_min = lap_time/60000;
@@ -155,6 +169,10 @@ void update_checkpoint(uint8_t car_id, uint8_t checkpoint, uint64_t time){
 					if (!(race.car2.win)){
 						race.car1.win = true;
 					}
+					lap_time = time - Start_information.car1_start_time;
+					race.car1.lap_min = lap_time/60000;
+					race.car1.lap_sec = (lap_time%60000)/1000;
+					race.car1.lap_ms = lap_time%61000;
 				}
 			}
 			
@@ -162,34 +180,50 @@ void update_checkpoint(uint8_t car_id, uint8_t checkpoint, uint64_t time){
 		case 2:
 			if (Start_information.car2_start_time == -1){
 				printf("You did not passed the start line!\n");
-				break;
+				return;
 			}
 			if (race.car2.race_end){
 				printf("[USER 2]RACE ALREADY ENDED\n");
-				break;
+				return;
 			}
 			printf("current checkpoint: %02x, lap time:%d:%d:%d \n", race.car2.checkpoint, race.car2.lap_min, race.car2.lap_sec, race.car2.lap_ms);
-			if((race.car2.checkpoint + 1) == checkpoint){  // correct checkpoint, update
-				if(checkpoint == 5){
-					race.car2.curr_lap++;
-					race.car2.checkpoint = 0;
+			if(((race.car2.checkpoint + 1) % (NCHECKPOINTS+1)) == checkpoint){  // correct checkpoint, update
+				if(checkpoint == 0){  // if first checkpoint, means car has lapped
+										// note that checkpoints count starting from 1 to NCHECKPOINTS
+					race.car2.checkpoint = checkpoint;
+					
+					lap_time = time - Start_information.car2_start_time -race.car2_times[(NCHECKPOINTS+1)*(race.car2.curr_lap-1)];
+					
+					race.car2.curr_lap+=1;
+					race.car2_times[checkpoint + (NCHECKPOINTS+1) * (race.car2.curr_lap-1)] = lap_time;
+					//race.car1.checkpoint = 0;
 				}
-				race.car2.checkpoint = checkpoint;
-				race.car2_times[checkpoint + NCHECKPOINTS * (race.car2.curr_lap-1)] = time;
-				int64_t lap_time = time - Start_information.car2_start_time;
-				printf("time interval %lld\n", lap_time);
-				printf("time interval min %lld\n", lap_time/60000);
+				else{
+					race.car2.checkpoint = checkpoint;
+					lap_time = time - Start_information.car2_start_time - race.car2_times[NCHECKPOINTS*(race.car2.curr_lap-1)];
+					printf("laptime: %lld\n", lap_time);
+					race.car2_times[checkpoint + (NCHECKPOINTS+1) * (race.car2.curr_lap-1)] = lap_time;
+				}
+				printf("time from car microcontroller %lld\n", time);
+				printf("Car 2 start time %lld\n", Start_information.car2_start_time);
+				printf("car 2 time array lap start time %lld\n", race.car2_times[(NCHECKPOINTS+1)*(race.car2.curr_lap-1)]);
+				//printf("time interval %lld\n", lap_time);
+				//printf("time interval min %lld\n", lap_time/60000);
 				race.car2.lap_min = lap_time/60000;
 				race.car2.lap_sec = (lap_time%60000)/1000;
 				race.car2.lap_ms = lap_time%61000;
 				printf("new checkpoint: %02x, lap time:%d:%d:%d \n", race.car2.checkpoint, race.car2.lap_min, race.car2.lap_sec, race.car2.lap_ms);
 				if (race.car2.curr_lap > Start_information.lap_num){
-					printf("[USER 1]RACE END!\n");
+					printf("[USER 2]RACE END!\n");
 					race.car2.race_end = true;
 					race.car2.curr_lap = Start_information.lap_num;
 					if (!(race.car1.win)){
 						race.car2.win = true;
 					}
+					lap_time = time - Start_information.car2_start_time;
+					race.car2.lap_min = lap_time/60000;
+					race.car2.lap_sec = (lap_time%60000)/1000;
+					race.car2.lap_ms = lap_time%61000;
 				}
 				
 			}
@@ -251,7 +285,7 @@ void tag_handler(tag_packet packet){
 			switch(car_id){
 				case 1: race.car1.modifier = mod; break;
 				case 2: race.car2.modifier = mod; break;
-				default: break;
+				default: race.car2.modifier = 5; break;
 			}
 
 			printf("Modifier Send Success\n");
