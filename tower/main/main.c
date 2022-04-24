@@ -80,6 +80,7 @@ void start_race(int8_t user, int8_t lap){
 	race.car1.lap_ms = 0;
 	race.car1.race_end = false;
 	race.car1.win = false;
+	race.car1.modifier = 5;
 	if(user > 1){
 		race.car2.checkpoint = 0;
 		race.car2.curr_lap = 1;
@@ -89,6 +90,7 @@ void start_race(int8_t user, int8_t lap){
 		race.car2.lap_ms = 0;
 		race.car2.race_end = false;
 		race.car2.win = false;
+		race.car2.modifier = 5;
 	}
 	start_game = true;
 	printf("start information updated\n");
@@ -170,7 +172,7 @@ void update_checkpoint(uint8_t car_id, uint8_t checkpoint, uint64_t time){
 			if((race.car2.checkpoint + 1) == checkpoint){  // correct checkpoint, update
 				if(checkpoint == 5){
 					race.car2.curr_lap++;
-					race.car1.checkpoint = 0;
+					race.car2.checkpoint = 0;
 				}
 				race.car2.checkpoint = checkpoint;
 				race.car2_times[checkpoint + NCHECKPOINTS * (race.car2.curr_lap-1)] = time;
@@ -246,6 +248,12 @@ void tag_handler(tag_packet packet){
 				ESP_LOGW("Tower", "Modifier Queue Full");
 			}
 			// free(new_packet);
+			switch(car_id){
+				case 1: race.car1.modifier = mod; break;
+				case 2: race.car2.modifier = mod; break;
+				default: break;
+			}
+
 			printf("Modifier Send Success\n");
 	}
 			
@@ -310,6 +318,15 @@ void recv_cb(const uint8_t * mac_addr, const uint8_t *data, int len) {
 	static tag_packet recv_packet;
 
 	ESP_LOGI("Tower", "%d bytes incoming from " MACSTR, len, MAC2STR(mac_addr));
+
+	if(len == sizeof(used_mod_packet)){
+		// NOTE: values here are hard coded for now
+		switch(mac_addr[0]){
+			case 0x1c: race.car1.modifier = 5; break;  // car 1
+			case 0x78: race.car2.modifier = 5; break;  // car 2
+		}
+		return;
+	}
 
 	if(len != sizeof(tag_packet)){
 		ESP_LOGE("Tower", "Unexpected packet size");
