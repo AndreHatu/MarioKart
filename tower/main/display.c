@@ -238,7 +238,7 @@ void race_display(){
     // ESP_LOGI("Tower", "In race_display");
     uint16_t divider = LAYOUT_Y1;
     bool end = true;
-    char number[4];
+    
     EVE_start_cmd_burst(); /* start writing to the cmd-fifo as one stream of bytes, only sending the address once */
     EVE_cmd_dl_burst(CMD_DLSTART); /* start the display list */
     EVE_cmd_dl_burst(DL_CLEAR_RGB | WHITE); /* set the default clear color to white */
@@ -340,7 +340,7 @@ void race_display(){
     end &= race.car1.race_end;
 
     //Car 2 status
-    if(userNum > 1){
+    if(userNum == 2){
         divider += 50;
         EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
         EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
