@@ -324,11 +324,11 @@ void race_display(){
     int nextchckpoint = (race.car1.checkpoint+1) % 5;
     // if (nextchckpoint == 0)
     //     nextchckpoint = 1;
-    EVE_cmd_number_burst(400, divider, 30, 0, nextchckpoint);
+    if (race.car1.curr_lap == 0)
+            EVE_cmd_text_burst(400, divider, 30, 0, "Start line!");
+        else
+            EVE_cmd_number_burst(400, divider, 30, 0,nextchckpoint);
     if (race.car1.win){
-        EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
-    }
-    else{
         switch(race.car1.modifier){
             case 0:  EVE_cmd_text_burst(600, divider, 30, 0, "Speed-up"); break;
             case 1:  EVE_cmd_text_burst(600, divider, 30, 0, "Slow opponents"); break;
@@ -366,11 +366,11 @@ void race_display(){
         int nextchckpoint = (race.car2.checkpoint+1) % 5;
         // if (nextchckpoint == 0)
         //     nextchckpoint = 1;
-        EVE_cmd_number_burst(400, divider, 30, 0,nextchckpoint);
-        if (race.car2.win){
-            EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
-        }
-        else{
+        if (race.car2.curr_lap == 0)
+            EVE_cmd_text_burst(400, divider, 30, 0, "Start line!");
+        else
+            EVE_cmd_number_burst(400, divider, 30, 0,nextchckpoint);
+        if (!race.car2.win){
 
             switch(race.car2.modifier){
                 case 0:  EVE_cmd_text_burst(600, divider, 30, 0, "Speed-up"); break;
@@ -384,9 +384,21 @@ void race_display(){
     }
 
     if (end){
+        if (race.winner){
+            EVE_cmd_text_burst(600, LAYOUT_Y1+50, 30, 0, "WINNER!");
+        }
+        else{
+            EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
+        }
         EVE_cmd_text_burst(300, 300, 30, 0, "RACE END!");
         EVE_cmd_dl_burst(TAG(11));
         EVE_cmd_button_burst(300, 350, 300, 60, 30, 0, "GO BACK TO MENU");
+    }
+    else{
+        if (race.car1.win)
+            EVE_cmd_text_burst(600, LAYOUT_Y1+50, 30, 0, "WINNER!");
+        else if (userNum==2 && race.car2.win)
+            EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
     }
 
     EVE_cmd_dl_burst(TAG(11));

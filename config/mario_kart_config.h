@@ -35,9 +35,10 @@ typedef struct __attribute__((packed)) {
 // struct to hold checkpoint times during a race
 typedef struct {
 	Car_Status car1;
-	uint64_t* car1_times;
+	uint64_t car1_times[5*10+1];
 	Car_Status car2;
-	uint64_t* car2_times;
+	uint64_t car2_times[5*10+1];
+	bool winner;
 } Race;
 
 //Struct for packets being sent from controller to car
