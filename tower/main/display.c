@@ -328,7 +328,7 @@ void race_display(){
             EVE_cmd_text_burst(400, divider, 30, 0, "Start line!");
         else
             EVE_cmd_number_burst(400, divider, 30, 0,nextchckpoint);
-    if (race.car1.win){
+    if (!race.car1.win){
         switch(race.car1.modifier){
             case 0:  EVE_cmd_text_burst(600, divider, 30, 0, "Speed-up"); break;
             case 1:  EVE_cmd_text_burst(600, divider, 30, 0, "Slow opponents"); break;
