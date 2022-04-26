@@ -207,7 +207,7 @@ void tag_handler(tag_packet packet){
 	printf("Received tag packet: %02x %02x %02x %02x %02x \n", packet.tag_id[0], packet.tag_id[1], packet.tag_id[2], packet.tag_id[3], packet.tag_id[4]);
 	
 	//Figure out which car sent the tag packet (to update car status)
-	uicodent8_t car_id;
+	uint8_t car_id;
 	printf("Received mac addr: %02x %02x %02x %02x %02x %02x\n", packet.src_mac[0], packet.src_mac[1], packet.src_mac[2], packet.src_mac[3], packet.src_mac[4], packet.src_mac[5]);
 	if (packet.src_mac[0] == 0x1c){
 		car_id = 1;
@@ -433,74 +433,68 @@ void initialize_hash(){
 	
 	//save modifier
 	sm_put(sm, "r68;E", "M");
+	sm_put(sm, ")$=N\\", "M");
+	sm_put(sm, ")$8lY", "M");
+	sm_put(sm, ")$/$ ", "M");
+	sm_put(sm, ")$x;P", "M");
+	sm_put(sm, ")$ 8+", "M");
 	
-	//stack 1
-    sm_put(sm, ")$h^", "M");
-	sm_put(sm, ")$0yd", "M");
-	sm_put(sm, ")$&V", "M");
-	sm_put(sm, ")$ >3", "M");
-	sm_put(sm, ")$1(6", "M");
-	sm_put(sm, ")$Y,X", "M");
-	sm_put(sm, ")$G'M", "M");
-	sm_put(sm, ")$a:V", "M");
-	sm_put(sm, ")$6|e", "M");
-	sm_put(sm, ")$%rZ", "M");
-
-	// //stack 2
-	// sm_put(sm, ")$=N\\", "C0");
-	// sm_put(sm, ")$8lY", "C0");
-	// sm_put(sm, ")$/$", "C0");
-	// sm_put(sm, ")$x;P", "C0");
-	// sm_put(sm, ")$ 8+", "C0");
-	// sm_put(sm, ")$Jm(", "C0");
-	// sm_put(sm, ")$C/A", "C0");
-	// sm_put(sm, ")$+Vt", "C0");
-	// sm_put(sm, ")$c,d", "C0");
-	// sm_put(sm, ")$=l^", "C0");
 	
-	// //stack 3
-	sm_put(sm, ")$>`Q", "M");
-	sm_put(sm, ")$w \\", "M");
-	sm_put(sm, ")$?8*", "M");
-	sm_put(sm, ")$6>%", "M");
-	sm_put(sm, ")$#Q", "M");
-	sm_put(sm, ")$I5Q", "M");
-
-	// Checkpoint 5
-	sm_put(sm, ")$4^e", "C5");
-	sm_put(sm, ")$c*h", "C5");
-	sm_put(sm, ")$V0w", "C5");
-	sm_put(sm, ")$8e^", "C5");
-
 	// Checkpoint 4
 	sm_put(sm, ")$y(R", "C4");
 	sm_put(sm, ")$&83", "C4");
 	sm_put(sm, ")$|\"Q", "C4");
 	sm_put(sm, ")$Lb#", "C4");
+	sm_put(sm, ")$Jm(", "C4");
+	sm_put(sm, ")$C/A", "C4");
+	sm_put(sm, ")$+Vt", "C4");
+	sm_put(sm, ")$c,d", "C4");
+	sm_put(sm, ")$=l^", "C4");
 
 	// Checkpoint 3
 	sm_put(sm, ")$28+", "C3");
 	sm_put(sm, ")$93\'", "C3");
 	sm_put(sm, ")$>2#", "C3");
 	sm_put(sm, ")$zW\"", "C3");
+	sm_put(sm, ")$h^;", "C3");
+	sm_put(sm, ")$&V ", "C3");
+	sm_put(sm, ")$Y,X", "C3");
+	sm_put(sm, ")$a:V", "C3");
+	sm_put(sm, ")$ >3", "C3");
 
 	// Checkpoint 2
-	sm_put(sm, ")$OZ", "C2");
+	sm_put(sm, ")$OZ:", "C2");
 	sm_put(sm, ")$=*8", "C2");
 	sm_put(sm, ")$&KD", "C2");
 	sm_put(sm, ")$<du", "C2");
+	sm_put(sm, ")$>`Q", "C2");
+	sm_put(sm, ")$?8*", "C2");
+	sm_put(sm, ")$6>%", "C2");
+	sm_put(sm, ")$#Q ", "C2");
+	sm_put(sm, ")$I5Q", "C2");
 
 	// Checkpoint 1
 	sm_put(sm, ")$d/h", "C1");
 	sm_put(sm, ")$>,=", "C1");
 	sm_put(sm, ")$v-t", "C1");
 	sm_put(sm, ")$Pl1", "C1");
+	sm_put(sm, ")$4^e", "C1");
+	sm_put(sm, ")$c*h", "C1");
+	sm_put(sm, ")$V0w", "C1");
+	sm_put(sm, ")$8e^", "C1");
+	sm_put(sm, ")$0yd", "C1");
+
 
 	// Checkpoint 0 Start line
 	sm_put(sm, ")$7+1", "C0");
 	sm_put(sm, ")$<~m", "C0");
 	sm_put(sm, ")$u2h", "C0");
 	sm_put(sm, ")$6rI", "C0");
+	sm_put(sm, ")$%rZ", "C0");
+	sm_put(sm, ")$G'M", "C0");
+	sm_put(sm, ")$1(6", "C0");
+	sm_put(sm, ")$6|e", "C0");
+	sm_put(sm, ")$w \\", "C0");
 }
 void initialize_time_array(){
 	int time_array_size = 5 * 10 + 1;

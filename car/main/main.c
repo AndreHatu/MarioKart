@@ -107,7 +107,7 @@ static void ctrl_queue_process_task(void *p)
 			print_packet(recv_packet,rev);
 			if (mod_flag){
 				current_time = millis();
-				if (current_time - start_time >= 1500){
+				if (current_time - start_time >= 3000){
 					printf("Back to normal state\n");
 					//printf("start time %d current time %d", start_time, current_time);
 					brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, V0);
@@ -132,7 +132,7 @@ static void ctrl_queue_process_task(void *p)
 						printf("Error: %x\n", err);
 					}
 					if (mod_pack.modifier == 0){
-						start_time = millis();
+						start_time = millis()-1500;
 						//current_time = start_time;
 						printf("modifier: power up\n");
 						brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, VSPEED);
@@ -195,7 +195,7 @@ static void active_mod_queue_process_task(void *p)
             // print_packet(recv_packet);
 			printf("Received Active modifier: %02x\n", active_packet.modifier);
 			if (active_packet.modifier == 1){
-				start_time = millis();
+				start_time = millis()-1500;
 				//current_time = start_time;
 				printf("modifier: power down\n");
 				brushed_motor_a(MCPWM_UNIT_0, MCPWM_TIMER_0, VSLOW);
