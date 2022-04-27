@@ -15,7 +15,7 @@
 #include "esp_system.h"
 #include "esp_sleep.h"
 #include "strmap.h"
-
+#include "tags.h"
 #include "../../config/mario_kart_config.h"
 #include "display.h"
 
@@ -153,7 +153,7 @@ void update_checkpoint(uint8_t car_id, uint8_t checkpoint, uint64_t time){
 		return;
 	}
 	else{ // When Player is in between the race
-		if (((this_car->checkpoint + 1) % NCHECKPOINTS) == checkpoint){
+		// if (((this_car->checkpoint + 1) % NCHECKPOINTS) == checkpoint){
 			printf("	Correct checkpoint passed \n");
 			uint64_t lap_time;
 			uint8_t lap = this_car->curr_lap;
@@ -197,7 +197,7 @@ void update_checkpoint(uint8_t car_id, uint8_t checkpoint, uint64_t time){
 			this_car->lap_min = lap_time/60000;
 			this_car->lap_sec = (lap_time%60000)/1000;
 			this_car->lap_ms = lap_time%61000;
-		}
+		// }
 	}
 }
 
@@ -216,28 +216,31 @@ void tag_handler(tag_packet packet){
 		car_id = 2;
 	}
 	
-	uint8_t id[TAG_LEN + 1];
-	id[TAG_LEN] = '\0';
-	memcpy(id, packet.tag_id, TAG_LEN);
-	// format tag so it fits within strmap constraints
-	for (int i = 0; i < TAG_LEN; i++){
-		if (id[i] > 0x7f){
-			id[i] %= 0x7f;
-		}
-		if (id[i]<0x20){
-			id[i] += 0x20;
-		}
-	}
-	printf("%s\n", id);
-	//Figure out whether tag is checkpoint or modifier
-	int result = sm_get(sm, (char*)id, value, sizeof(value));
-	if (result == 0){	//if tag id sent is not saved in the map
-		printf("key not found\n");
-		return;
-	}
+
+
+	// uint8_t id[TAG_LEN + 1];
+	// id[TAG_LEN] = '\0';
+	// memcpy(id, packet.tag_id, TAG_LEN);
+	// // format tag so it fits within strmap constraints
+	// for (int i = 0; i < TAG_LEN; i++){
+	// 	if (id[i] > 0x7f){
+	// 		id[i] %= 0x7f;
+	// 	}
+	// 	if (id[i]<0x20){
+	// 		id[i] += 0x20;
+	// 	}
+	// }
+	// printf("%s\n", id);
+	// //Figure out whether tag is checkpoint or modifier
+	// int result = sm_get(sm, (char*)id, value, sizeof(value));
+	// if (result == 0){	//if tag id sent is not saved in the map
+	// 	printf("key not found\n");
+	// 	return;
+	// }
 
 	// craft return packet according to whether it is a modifier or a checkpoint
-	if (value[0] == 'M'){
+	// if (value[0] == 'M'){
+	if(is_mod((char*)packet.tag_id)){
 			uint8_t mod = random_modifier(); // get random modifier
 			printf("%02x\n", mod);
 			//setup send packet
@@ -260,13 +263,16 @@ void tag_handler(tag_packet packet){
 			printf("Modifier Send Success\n");
 	}
 			
-	else if (value[0] == 'C'){
+	// else if (value[0] == 'C'){
+	else{
+		uint8_t cp = car_id == 1 ? (race.car1.checkpoint+1) % NCHECKPOINTS : (race.car2.checkpoint+1) % NCHECKPOINTS;
+		if(is_cp((char*)packet.tag_id, cp)){
 			//figure out which car status to modify
 			//printf("startTime: %ld, packet laptime: %ld\n", (long)Start_information.start_time, (long)packet.lap_time);
 			// printf("current checkpoint: %02x, lap time:%d:%d:%d \n", my_car.checkpoint, my_car.lap_min, my_car.lap_sec, my_car.lap_ms);
-			uint8_t checkpoint = value[1] - '0'; // add 1 to make checkpoint counting start from 1
-			update_checkpoint(car_id, checkpoint, packet.lap_time);
-
+			// uint8_t checkpoint = value[1] - '0'; // add 1 to make checkpoint counting start from 1
+			update_checkpoint(car_id, cp, packet.lap_time);
+			//race.car1.checkpoint
 			// if (val == (my_car.checkpoint%5)){
 			// 	//my_car.lap_time += packet.lap_time;
 			// 	my_car.checkpoint++;
@@ -282,7 +288,7 @@ void tag_handler(tag_packet packet){
 			printf("check point read\n");
 			printf("car status updated\n");
 			//printf("new checkpoint: %02x, lap time:%ld \n", my_car.checkpoint, (long)(my_car.lap_time));
-	}
+		}
 
 
 	// modifier_packet* send_packet = malloc(sizeof(modifier_packet));
@@ -290,6 +296,7 @@ void tag_handler(tag_packet packet){
 	// if(xQueueSend(modifier_q, send_packet, portMAX_DELAY) != pdTRUE){
 	// 	ESP_LOGW("Tower", "Modifier Queue Full");
 	// }
+	}
 }
 
 //receive data from car (NFC tag information)
@@ -423,79 +430,79 @@ static void initialize_esp_now_tower(void){
 	ESP_ERROR_CHECK(esp_now_add_peer(&dest_peer2));
 }
 
-void initialize_hash(){
+// void initialize_hash(){
 
-	start_game = false;
-	sm = sm_new(51);
-	if (sm == NULL){
-		printf("string map not created \n");
-	}
+// 	start_game = false;
+// 	sm = sm_new(51);
+// 	if (sm == NULL){
+// 		printf("string map not created \n");
+// 	}
 	
-	//save modifier
-	sm_put(sm, "r68;E", "M");
-	sm_put(sm, ")$=N\\", "M");
-	sm_put(sm, ")$8lY", "M");
-	sm_put(sm, ")$/$ ", "M");
-	sm_put(sm, ")$x;P", "M");
-	sm_put(sm, ")$ 8+", "M");
+// 	//save modifier
+// 	sm_put(sm, "r68;E", "M");
+// 	sm_put(sm, ")$=N\\", "M");
+// 	sm_put(sm, ")$8lY", "M");
+// 	sm_put(sm, ")$/$ ", "M");
+// 	sm_put(sm, ")$x;P", "M");
+// 	sm_put(sm, ")$ 8+", "M");
 	
 	
-	// Checkpoint 4
-	sm_put(sm, ")$y(R", "C4");
-	sm_put(sm, ")$&83", "C4");
-	sm_put(sm, ")$|\"Q", "C4");
-	sm_put(sm, ")$Lb#", "C4");
-	sm_put(sm, ")$Jm(", "C4");
-	sm_put(sm, ")$C/A", "C4");
-	sm_put(sm, ")$+Vt", "C4");
-	sm_put(sm, ")$c,d", "C4");
-	sm_put(sm, ")$=l^", "C4");
+// 	// Checkpoint 4
+// 	sm_put(sm, ")$y(R", "C4");
+// 	sm_put(sm, ")$&83", "C4");
+// 	sm_put(sm, ")$|\"Q", "C4");
+// 	sm_put(sm, ")$Lb#", "C4");
+// 	sm_put(sm, ")$Jm(", "C4");
+// 	sm_put(sm, ")$C/A", "C4");
+// 	sm_put(sm, ")$+Vt", "C4");
+// 	sm_put(sm, ")$c,d", "C4");
+// 	sm_put(sm, ")$=l^", "C4");
 
-	// Checkpoint 3
-	sm_put(sm, ")$28+", "C3");
-	sm_put(sm, ")$93\'", "C3");
-	sm_put(sm, ")$>2#", "C3");
-	sm_put(sm, ")$zW\"", "C3");
-	sm_put(sm, ")$h^;", "C3");
-	sm_put(sm, ")$&V ", "C3");
-	sm_put(sm, ")$Y,X", "C3");
-	sm_put(sm, ")$a:V", "C3");
-	sm_put(sm, ")$ >3", "C3");
+// 	// Checkpoint 3
+// 	sm_put(sm, ")$28+", "C3");
+// 	sm_put(sm, ")$93\'", "C3");
+// 	sm_put(sm, ")$>2#", "C3");
+// 	sm_put(sm, ")$zW\"", "C3");
+// 	sm_put(sm, ")$h^;", "C3");
+// 	sm_put(sm, ")$&V ", "C3");
+// 	sm_put(sm, ")$Y,X", "C3");
+// 	sm_put(sm, ")$a:V", "C3");
+// 	sm_put(sm, ")$ >3", "C3");
 
-	// Checkpoint 2
-	sm_put(sm, ")$OZ:", "C2");
-	sm_put(sm, ")$=*8", "C2");
-	sm_put(sm, ")$&KD", "C2");
-	sm_put(sm, ")$<du", "C2");
-	sm_put(sm, ")$>`Q", "C2");
-	sm_put(sm, ")$?8*", "C2");
-	sm_put(sm, ")$6>%", "C2");
-	sm_put(sm, ")$#Q ", "C2");
-	sm_put(sm, ")$I5Q", "C2");
+// 	// Checkpoint 2
+// 	sm_put(sm, ")$OZ:", "C2");
+// 	sm_put(sm, ")$=*8", "C2");
+// 	sm_put(sm, ")$&KD", "C2");
+// 	sm_put(sm, ")$<du", "C2");
+// 	sm_put(sm, ")$>`Q", "C2");
+// 	sm_put(sm, ")$?8*", "C2");
+// 	sm_put(sm, ")$6>%", "C2");
+// 	sm_put(sm, ")$#Q ", "C2");
+// 	sm_put(sm, ")$I5Q", "C2");
 
-	// Checkpoint 1
-	sm_put(sm, ")$d/h", "C1");
-	sm_put(sm, ")$>,=", "C1");
-	sm_put(sm, ")$v-t", "C1");
-	sm_put(sm, ")$Pl1", "C1");
-	sm_put(sm, ")$4^e", "C1");
-	sm_put(sm, ")$c*h", "C1");
-	sm_put(sm, ")$V0w", "C1");
-	sm_put(sm, ")$8e^", "C1");
-	sm_put(sm, ")$0yd", "C1");
+// 	// Checkpoint 1
+// 	sm_put(sm, ")$d/h", "C1");
+// 	sm_put(sm, ")$>,=", "C1");
+// 	sm_put(sm, ")$v-t", "C1");
+// 	sm_put(sm, ")$Pl1", "C1");
+// 	sm_put(sm, ")$4^e", "C1");
+// 	sm_put(sm, ")$c*h", "C1");
+// 	sm_put(sm, ")$V0w", "C1");
+// 	sm_put(sm, ")$8e^", "C1");
+// 	sm_put(sm, ")$0yd", "C1");
 
 
-	// Checkpoint 0 Start line
-	sm_put(sm, ")$7+1", "C0");
-	sm_put(sm, ")$<~m", "C0");
-	sm_put(sm, ")$u2h", "C0");
-	sm_put(sm, ")$6rI", "C0");
-	sm_put(sm, ")$%rZ", "C0");
-	sm_put(sm, ")$G'M", "C0");
-	sm_put(sm, ")$1(6", "C0");
-	sm_put(sm, ")$6|e", "C0");
-	sm_put(sm, ")$w \\", "C0");
-}
+// 	// Checkpoint 0 Start line
+// 	sm_put(sm, ")$7+1", "C0");
+// 	sm_put(sm, ")$<~m", "C0");
+// 	sm_put(sm, ")$u2h", "C0");
+// 	sm_put(sm, ")$6rI", "C0");
+// 	sm_put(sm, ")$%rZ", "C0");
+// 	sm_put(sm, ")$G'M", "C0");
+// 	sm_put(sm, ")$1(6", "C0");
+// 	sm_put(sm, ")$6|e", "C0");
+// 	sm_put(sm, ")$w \\", "C0");
+// }
 void initialize_time_array(){
 	int time_array_size = 5 * 10 + 1;
 	for (int i = 0; i < time_array_size; ++i){
@@ -511,7 +518,7 @@ void app_main(void) {
 	initialize_esp_now_tower();
 
 	//setup the hash map
-	initialize_hash();
+	// initialize_hash();
 	initialize_time_array();
 	xTaskCreate(queue_process_task, "Receive_from_car", 2048, NULL, 5, NULL);
 	xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 5, NULL);
@@ -520,4 +527,6 @@ void app_main(void) {
 
 	//xTaskCreate(touch_task, "handle_touches", 2048, NULL, 2, NULL);
 	xTaskCreate(task_menu, "handle_touches", 2048, NULL, 2, NULL);
+	ESP_LOGI("Tower", "Finished startup sequence");
+
 }
