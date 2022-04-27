@@ -513,8 +513,8 @@ void app_main(void) {
 	//setup the hash map
 	initialize_hash();
 	initialize_time_array();
-	xTaskCreate(queue_process_task, "Receive_from_car", 2048, NULL, 2, NULL);
-	xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 2, NULL);
+	xTaskCreate(queue_process_task, "Receive_from_car", 2048, NULL, 5, NULL);
+	xTaskCreate(queue_send_task, "Send_info_to_car", 2048, NULL, 5, NULL);
 
 	display_init();
 
