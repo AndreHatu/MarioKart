@@ -375,10 +375,10 @@ void app_main(void) {
 	initialize_esp_now_car();
 	mcpwm_example_gpio_initialize();
 
-	xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 1, NULL);
+	xTaskCreate(ctrl_queue_process_task, "Receive_from_controller", 2048, NULL, 2, NULL);
 	xTaskCreate(tag_queue_send_task, "Send_info_to_Tower", 2048, NULL, 3, NULL);
-	xTaskCreate(tower_queue_process_task, "Receive_from_tower", 2048, NULL, 3, NULL);
-	xTaskCreate(active_mod_queue_process_task, "Receive active modifier", 2048, NULL, 3, NULL);
+	xTaskCreate(tower_queue_process_task, "Receive_from_tower", 2048, NULL, 5, NULL);
+	xTaskCreate(active_mod_queue_process_task, "Receive active modifier", 2048, NULL, 5, NULL);
 	//xTaskCreate(test_comm_task, "Send_info_to_Tower", 2048, NULL, 2, NULL);
 	//xTaskCreate(mcpwm_example_config, "mcpwm_example_config", 4096, NULL, 5, NULL);
 	// xTaskCreate(print_outputs, "Print_GPIO_outputs", 2048, NULL, 1, NULL);
