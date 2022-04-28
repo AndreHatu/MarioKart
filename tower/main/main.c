@@ -74,7 +74,7 @@ void start_race(int8_t user, int8_t lap){
     Start_information.lap_num = lap;
 	Start_information.user_num = user;
 
-	race.car1.checkpoint = 0;
+	race.car1.checkpoint = 4;
 	race.car1.curr_lap = 0;
 	for (i = 0; i < time_array_size; ++i)
     	race.car1_times[i] = 0;
@@ -86,7 +86,7 @@ void start_race(int8_t user, int8_t lap){
 	race.car1.modifier = 5;
 
 	if(user > 1){
-		race.car2.checkpoint = 0;
+		race.car2.checkpoint = 4;
 		race.car2.curr_lap = 0;
 		for (i = 0; i < time_array_size; ++i)
     		race.car2_times[i] = 0;	
@@ -107,8 +107,8 @@ uint8_t random_modifier(){
 	//	1: power down
 	//	2: reverse control
 	//	3: stop
-	//return (uint8_t) (esp_random() % 4);
-	return 0;
+	return (uint8_t) (esp_random() % 4);
+	//return 0;
 }
 
 void update_checkpoint(uint8_t car_id, uint8_t checkpoint, uint64_t time){
@@ -136,17 +136,18 @@ void update_checkpoint(uint8_t car_id, uint8_t checkpoint, uint64_t time){
 	}
 
 	// When Passing the Start Line
-	if (*car_start_time == -1){
-		if (checkpoint == 0){
+	if (this_car->checkpoint == 4 && *car_start_time == -1){
+		
 			printf("	Start Line passed!/n");
 			*car_start_time = time;
 			time_array[0] = 0;
 			this_car->curr_lap += 1;
-		}
-		else{
-			printf("	You did not passed the start line!\n");
-			return;
-		}
+			this_car->checkpoint = checkpoint;
+		// }
+		// else{
+		// 	printf("	You did not passed the start line!\n");
+		// 	return;
+		// }
 	}
 	else if (this_car->race_end) { // When Player passed the Finish Line
 		printf("[USER 1]RACE ALREADY ENDED\n");
@@ -218,18 +219,18 @@ void tag_handler(tag_packet packet){
 	
 
 
-	// uint8_t id[TAG_LEN + 1];
-	// id[TAG_LEN] = '\0';
-	// memcpy(id, packet.tag_id, TAG_LEN);
+	uint8_t id[TAG_LEN + 1];
+	id[TAG_LEN] = '\0';
+	memcpy(id, packet.tag_id, TAG_LEN);
 	// // format tag so it fits within strmap constraints
-	// for (int i = 0; i < TAG_LEN; i++){
-	// 	if (id[i] > 0x7f){
-	// 		id[i] %= 0x7f;
-	// 	}
-	// 	if (id[i]<0x20){
-	// 		id[i] += 0x20;
-	// 	}
-	// }
+	for (int i = 0; i < TAG_LEN; i++){
+		if (id[i] > 0x7f){
+			id[i] %= 0x7f;
+		}
+		if (id[i]<0x20){
+			id[i] += 0x20;
+		}
+	}
 	// printf("%s\n", id);
 	// //Figure out whether tag is checkpoint or modifier
 	// int result = sm_get(sm, (char*)id, value, sizeof(value));
@@ -240,7 +241,7 @@ void tag_handler(tag_packet packet){
 
 	// craft return packet according to whether it is a modifier or a checkpoint
 	// if (value[0] == 'M'){
-	if(is_mod((char*)packet.tag_id)){
+	if(is_mod((char*)id)){
 			uint8_t mod = random_modifier(); // get random modifier
 			printf("%02x\n", mod);
 			//setup send packet
@@ -265,8 +266,10 @@ void tag_handler(tag_packet packet){
 			
 	// else if (value[0] == 'C'){
 	else{
+		printf("checking if it's a checkpoint, current %d %d\n", race.car1.checkpoint, race.car2.checkpoint);
 		uint8_t cp = car_id == 1 ? (race.car1.checkpoint+1) % NCHECKPOINTS : (race.car2.checkpoint+1) % NCHECKPOINTS;
-		if(is_cp((char*)packet.tag_id, cp)){
+		if(is_cp((char*)id, cp)){
+			printf("Right Checkpoint Passed\n");
 			//figure out which car status to modify
 			//printf("startTime: %ld, packet laptime: %ld\n", (long)Start_information.start_time, (long)packet.lap_time);
 			// printf("current checkpoint: %02x, lap time:%d:%d:%d \n", my_car.checkpoint, my_car.lap_min, my_car.lap_sec, my_car.lap_ms);
@@ -297,6 +300,9 @@ void tag_handler(tag_packet packet){
 	// 	ESP_LOGW("Tower", "Modifier Queue Full");
 	// }
 	}
+
+	// race_display();
+
 }
 
 //receive data from car (NFC tag information)

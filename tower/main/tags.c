@@ -1,4 +1,5 @@
 #include "tags.h"
+#include <stdio.h>
 
 char c0[NTAGS_CP][TAGLEN] = {
     ")$7+1",
@@ -70,6 +71,7 @@ char modifiers[NTAGS_MOD][TAGLEN] = {
 };
 
 uint8_t is_cp(char* val, int CP){
+    printf("is_cp: received %s for cp %d\n", val, CP);
     switch(CP){
         case 0: for(int i = 0; i < NTAGS_CP; i++){
                     if(strcmp(c0[i], val) == 0)

@@ -1,5 +1,6 @@
 #include "display.h"
 #include "esp_log.h"
+#include "freertos/task.h"
 
 #define MEM_DL_STATIC (EVE_RAM_G_SIZE - 4096) /* 0xff000 - start-address of the static part of the display-list, upper 4k of gfx-mem */
 #define LAYOUT_Y1 66
@@ -28,61 +29,6 @@ bool game_active = false;
 //         Car2_status.lap_time = lap_time;
 //     }
 // }
-
-void reverse(char str[], int length){
-    int start = 0;
-    int end = length -1;
-    while (start < end)
-    {
-		char buffer = *(str+start);
-		*(str+start) = *(str+end);
-		*(str+end) = buffer;
-        // swap(*(str+start), *(str+end));
-        start++;
-        end--;
-    }
-}
- 
-// Implementation of itoa()
-char* itoa(int num, char* str, int base){
-    int i = 0;
-    bool isNegative = false;
- 
-    /* Handle 0 explicitly, otherwise empty string is printed for 0 */
-    if (num == 0)
-    {
-        str[i++] = '0';
-        str[i] = '\0';
-        return str;
-    }
- 
-    // In standard itoa(), negative numbers are handled only with
-    // base 10. Otherwise numbers are considered unsigned.
-    if (num < 0 && base == 10)
-    {
-        isNegative = true;
-        num = -num;
-    }
- 
-    // Process individual digits
-    while (num != 0)
-    {
-        int rem = num % base;
-        str[i++] = (rem > 9)? (rem-10) + 'a' : rem + '0';
-        num = num/base;
-    }
- 
-    // If number is negative, append '-'
-    if (isNegative)
-        str[i++] = '-';
- 
-    str[i] = '\0'; // Append string terminator
- 
-    // Reverse the string
-    reverse(str, i);
- 
-    return str;
-}
 
 
 void display_init(){
@@ -240,6 +186,8 @@ void race_display(){
     bool end = true;
     
     EVE_start_cmd_burst(); /* start writing to the cmd-fifo as one stream of bytes, only sending the address once */
+    vTaskSuspendAll();
+
     EVE_cmd_dl_burst(CMD_DLSTART); /* start the display list */
     EVE_cmd_dl_burst(DL_CLEAR_RGB | WHITE); /* set the default clear color to white */
     EVE_cmd_dl_burst(DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG); /* clear the screen - this and the previous prevent artifacts between lists, Attributes are the color, stencil and tag buffers */
@@ -337,7 +285,7 @@ void race_display(){
             default: break;
         }
     }
-    end &= race.car1.race_end;
+    // end &= race.car1.race_end;
 
     //Car 2 status
     if(userNum == 2){
@@ -380,26 +328,26 @@ void race_display(){
                 default: break;
             }
         }
-        end &= race.car2.race_end;
+        // end &= race.car2.race_end;
     }
 
-    if (end){
-        if (race.winner){
-            EVE_cmd_text_burst(600, LAYOUT_Y1+50, 30, 0, "WINNER!");
-        }
-        else{
-            EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
-        }
-        EVE_cmd_text_burst(300, 300, 30, 0, "RACE END!");
-        EVE_cmd_dl_burst(TAG(11));
-        EVE_cmd_button_burst(300, 350, 300, 60, 30, 0, "GO BACK TO MENU");
-    }
-    else{
+    // if (end){
+    //     if (race.winner){
+    //         EVE_cmd_text_burst(600, LAYOUT_Y1+50, 30, 0, "WINNER!");
+    //     }
+    //     else{
+    //         EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
+    //     }
+    //     EVE_cmd_text_burst(300, 300, 30, 0, "RACE END!");
+    //     EVE_cmd_dl_burst(TAG(11));
+    //     EVE_cmd_button_burst(300, 350, 300, 60, 30, 0, "GO BACK TO MENU");
+    // }
+    // else{
         if (race.car1.win)
             EVE_cmd_text_burst(600, LAYOUT_Y1+50, 30, 0, "WINNER!");
         else if (userNum==2 && race.car2.win)
             EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
-    }
+    // }
 
     EVE_cmd_dl_burst(TAG(11));
     EVE_cmd_button_burst(20, 15, 150, 40, 30, 0, "Back");
@@ -414,9 +362,202 @@ void race_display(){
     EVE_cmd_dl_burst(DL_DISPLAY); /* instruct the co-processor to show the list */
     EVE_cmd_dl_burst(CMD_SWAP); /* make this list active */
     //while(EVE_busy()) {};
+    xTaskResumeAll(); 
 
     EVE_end_cmd_burst();
 }
+
+void end_race_display(){
+    // ESP_LOGI("Tower", "In race_display");
+    uint16_t divider = LAYOUT_Y1;
+    bool end = true;
+    
+    EVE_start_cmd_burst(); /* start writing to the cmd-fifo as one stream of bytes, only sending the address once */
+    vTaskSuspendAll();
+
+    EVE_cmd_dl_burst(CMD_DLSTART); /* start the display list */
+    EVE_cmd_dl_burst(DL_CLEAR_RGB | WHITE); /* set the default clear color to white */
+    EVE_cmd_dl_burst(DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG); /* clear the screen - this and the previous prevent artifacts between lists, Attributes are the color, stencil and tag buffers */
+    EVE_cmd_dl_burst(TAG(0));
+    EVE_cmd_dl_burst(VERTEX_FORMAT(0)); /* reduce precision for VERTEX2F to 1 pixel instead of 1/16 pixel default */
+
+    EVE_cmd_append_burst(MEM_DL_STATIC, num_dl_static); /* insert static part of display-list from copy in gfx-mem */
+    
+    /* draw a rectangle on top */
+    EVE_cmd_dl_burst(DL_BEGIN | EVE_RECTS);
+    EVE_cmd_dl_burst(LINE_WIDTH(1*16)); /* size is in 1/16 pixel */
+    EVE_cmd_dl_burst(DL_COLOR_RGB | BLUE_1);
+    EVE_cmd_dl_burst(VERTEX2F(0,0));
+    EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE,LAYOUT_Y1-2));
+    EVE_cmd_dl_burst(DL_END);
+
+    /* draw a black line to separate things */
+    EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
+    EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
+    EVE_cmd_dl_burst(VERTEX2F(0,LAYOUT_Y1-2));
+    EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE,LAYOUT_Y1-2));
+    EVE_cmd_dl_burst(DL_END);
+
+    EVE_cmd_text_burst(EVE_HSIZE/2, 15, 30, EVE_OPT_CENTERX, "Mario Kart!");
+
+   
+       
+    // set line color to black
+    EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
+    EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
+    EVE_cmd_dl_burst(VERTEX2F(0, LAYOUT_Y1+50));
+    EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, LAYOUT_Y1+50));
+    EVE_cmd_dl_burst(DL_END);
+
+
+    EVE_cmd_text_burst(0, LAYOUT_Y1, 30, 0, "Player");
+    EVE_cmd_text_burst(100, LAYOUT_Y1, 30, 0, "Laps");
+    EVE_cmd_text_burst(200, LAYOUT_Y1, 30, 0, "Lap Time");
+    EVE_cmd_text_burst(350, LAYOUT_Y1, 30, 0, "Next Checkpoint");
+    EVE_cmd_text_burst(600, LAYOUT_Y1, 30, 0, "Modifier");
+   // while(EVE_busy()) {};
+
+    // for(int i = 0; i < userNum; i++){
+    //     divider += 50;
+    //     /* draw a black line to separate things */
+    //     EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
+    //     EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
+    //     EVE_cmd_dl_burst(VERTEX2F(0, divider+50));
+    //     EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, divider+50));
+    //     EVE_cmd_dl_burst(DL_END);
+
+    //     EVE_cmd_text_burst(0, divider, 30, 0, i);
+    //     EVE_cmd_text_burst(100, divider, 30, 0, "y");
+    //     EVE_cmd_text_burst(170, divider, 30, 0, "xx:xx:xx");
+
+    // }
+
+    //Car 1 status
+    divider += 50;
+    /* draw a black line to separate things */
+    EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
+    EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
+    EVE_cmd_dl_burst(VERTEX2F(0, divider+50));
+    EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, divider+50));
+    EVE_cmd_dl_burst(DL_END);
+
+    EVE_cmd_text_burst(0, divider, 30, 0, "Car 1");
+    // itoa(race.car1.curr_lap, &number, 10);
+    EVE_cmd_number_burst(100, divider, 30, 0, race.car1.curr_lap);
+    // EVE_cmd_text_burst(115, divider, 30, 0, "/4");
+
+    // itoa(race.car1.lap_min, &number, 10);
+    EVE_cmd_number_burst(200, divider, 30, 0, race.car1.lap_min);
+    EVE_cmd_text_burst(240, divider, 30, 0, ":");
+    // itoa(race.car1.lap_sec, &number, 10);
+    EVE_cmd_number_burst(250, divider, 30, 0, race.car1.lap_sec);
+    EVE_cmd_text_burst(290, divider, 30, 0, ":");
+    // itoa(race.car1.lap_ms, &number, 10);
+    EVE_cmd_number_burst(300, divider, 30, 0, race.car1.lap_ms);
+
+    // itoa(race.car1.checkpoint, &number, 10);
+    // int nextchckpoint = (race.car1.checkpoint+1) % 5;
+    // if (nextchckpoint == 0)
+    //     nextchckpoint = 1;
+    // if (race.car1.curr_lap == 0)
+    //         EVE_cmd_text_burst(400, divider, 30, 0, "Start line!");
+    //     else
+    //         EVE_cmd_number_burst(400, divider, 30, 0,nextchckpoint);
+    // if (!race.car1.win){
+    //     switch(race.car1.modifier){
+    //         case 0:  EVE_cmd_text_burst(600, divider, 30, 0, "Speed-up"); break;
+    //         case 1:  EVE_cmd_text_burst(600, divider, 30, 0, "Slow opponents"); break;
+    //         case 2:  EVE_cmd_text_burst(600, divider, 30, 0, "Confuse opponents"); break;
+    //         case 3:  EVE_cmd_text_burst(600, divider, 30, 0, "Stop opponents"); break;
+    //         default: break;
+    //     }
+    // }
+    // end &= race.car1.race_end;
+
+    //Car 2 status
+    if(userNum == 2){
+        divider += 50;
+        EVE_cmd_dl_burst(DL_COLOR_RGB | BLACK);
+        EVE_cmd_dl_burst(DL_BEGIN | EVE_LINES);
+        EVE_cmd_dl_burst(VERTEX2F(0, divider+50));
+        EVE_cmd_dl_burst(VERTEX2F(EVE_HSIZE, divider+50));
+        EVE_cmd_dl_burst(DL_END);
+
+        EVE_cmd_text_burst(0, divider, 30, 0, "Car 2");
+        // itoa(race.car2.curr_lap, &number, 10);
+        EVE_cmd_number_burst(100, divider, 30, 0, race.car2.curr_lap);
+        
+
+        // itoa(race.car2.lap_min, &number, 10);
+        EVE_cmd_number_burst(200, divider, 30, 0, race.car2.lap_min);
+        EVE_cmd_text_burst(240, divider, 30, 0, ":");
+        // itoa(race.car2.lap_sec, &number, 10);
+        EVE_cmd_number_burst(250, divider, 30, 0, race.car2.lap_sec);
+        EVE_cmd_text_burst(290, divider, 30, 0, ":");
+        // itoa(race.car2.lap_ms, &number, 10);
+        EVE_cmd_number_burst(300, divider, 30, 0, race.car2.lap_ms);
+
+        // itoa(race.car2.checkpoint, &number, 10);
+        // int nextchckpoint = (race.car2.checkpoint+1) % 5;
+        // // if (nextchckpoint == 0)
+        // //     nextchckpoint = 1;
+        // if (race.car2.curr_lap == 0)
+        //     EVE_cmd_text_burst(400, divider, 30, 0, "Start line!");
+        // else
+        //     EVE_cmd_number_burst(400, divider, 30, 0,nextchckpoint);
+        // if (!race.car2.win){
+
+        //     switch(race.car2.modifier){
+        //         case 0:  EVE_cmd_text_burst(600, divider, 30, 0, "Speed-up"); break;
+        //         case 1:  EVE_cmd_text_burst(600, divider, 30, 0, "Slow opponents"); break;
+        //         case 2:  EVE_cmd_text_burst(600, divider, 30, 0, "Confuse opponents"); break;
+        //         case 3:  EVE_cmd_text_burst(600, divider, 30, 0, "Stop opponents"); break;
+        //         default: break;
+        //     }
+        // }
+        // end &= race.car2.race_end;
+    }
+
+    // if (end){
+    //     if (race.winner){
+    //         EVE_cmd_text_burst(600, LAYOUT_Y1+50, 30, 0, "WINNER!");
+    //     }
+    //     else{
+    //         EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
+    //     }
+    //     EVE_cmd_text_burst(300, 300, 30, 0, "RACE END!");
+    //     EVE_cmd_dl_burst(TAG(11));
+    //     EVE_cmd_button_burst(300, 350, 300, 60, 30, 0, "GO BACK TO MENU");
+    // }
+    // else{
+    if (race.car1.win)
+        EVE_cmd_text_burst(600, LAYOUT_Y1+50, 30, 0, "WINNER!");
+    else if (userNum==2 && race.car2.win)
+        EVE_cmd_text_burst(600, divider, 30, 0, "WINNER!");
+    // }
+
+    EVE_cmd_text_burst(300, 300, 30, 0, "RACE END!");
+    EVE_cmd_dl_burst(TAG(11));
+    EVE_cmd_button_burst(300, 350, 300, 60, 30, 0, "GO BACK TO MENU");
+
+    EVE_cmd_dl_burst(TAG(11));
+    EVE_cmd_button_burst(20, 15, 150, 40, 30, 0, "Back");
+    EVE_cmd_dl_burst(TAG(0));
+
+
+    //while (EVE_busy()) {};
+
+    num_dl_static = EVE_memRead16(REG_CMD_DL);
+
+    EVE_cmd_memcpy(MEM_DL_STATIC, EVE_RAM_DL, num_dl_static);
+    EVE_cmd_dl_burst(DL_DISPLAY); /* instruct the co-processor to show the list */
+    EVE_cmd_dl_burst(CMD_SWAP); /* make this list active */
+    //while(EVE_busy()) {};
+    xTaskResumeAll(); 
+
+    EVE_end_cmd_burst();
+}
+
 
 void task_menu(void* args){
     // uint8_t counter = 0;
@@ -463,14 +604,17 @@ void task_menu(void* args){
                 }
                 
             }
-            if (!game_active){
-                
+            if (!game_active){           
                 userNum = userNum > 2 ? 2 : userNum < 1 ? 1 : userNum;
                 lapNum = lapNum > 10 ? 10 : lapNum < 1 ? 1 : lapNum;
                 menu_display();
             }
             else{
-                race_display();
+                if(race.car1.race_end && (race.car2.race_end | (userNum==1))){
+                    end_race_display();
+                }else{
+                    race_display();
+                }
             }
 
         vTaskDelay(150/portTICK_PERIOD_MS);
